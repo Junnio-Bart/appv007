@@ -1,0 +1,8 @@
+:root{
+  --bg:#0f172a; --panel:#111827; --text:#e5e7eb; --muted:#94a3b8;
+  --accent:#22c55e; --accent-2:#2563eb; --warn:#fbbf24; --danger:#ef4444;
+  --radius:16px; --gap:12px; --shadow:0 6px 24px rgba(0,0,0,.35);
+  --fs-hero: clamp(28px, 5.2vw, 42px);
+  --fs-h1:   clamp(20px, 4.2vw, 32px);
+  --fs-body: clamp(14px, 3.6vw, 18px);
+}
