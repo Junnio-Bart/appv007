@@ -1,0 +1,66 @@
+.backdrop{
+  position:fixed; inset:0;
+  background: rgba(0,0,0,.55);
+  display:grid; place-items:center;
+  z-index: 1000;
+}
+.modal{
+  width:min(92vw, 560px);
+  background:#0f172a;
+  color:#e6f2ec;
+  border-radius:18px;
+  padding:16px;
+  box-shadow:0 18px 44px rgba(0,0,0,.45);
+}
+h2{ margin:0 0 10px; 
+  font-size:35px; 
+  font-weight: 750;
+}
+
+.form{ display:grid; gap:12px; }
+
+.grid{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.box{
+  display:grid; gap:6px;
+}
+.label{
+  font-size:13px; color:#9fb3ce;
+}
+input{
+  background:#0b1222; color:#e6f2ec;
+  border:1px solid #23314c; border-radius:12px;
+  padding:12px 14px;
+  font-size:16px;          /* evita zoom no iOS */
+  line-height:1.35; min-height:44px;
+}
+
+.progress{
+  justify-self:center;
+  margin-top:4px;
+  padding:8px 14px;
+  border-radius:12px;
+  font-weight:800;
+  font-size:16px;
+  border:2px solid transparent;
+}
+.r{ background:#2b1518; border-color:#5b1f27; color:#ffd6d9; }
+.y{ background:#2a2411; border-color:#52461a; color:#ffe9a6; }
+.g{ background:#13261f; border-color:#23533f; color:#9cf0c9; }
+.b{ background:#13223a; border-color:#25426c; color:#b8d7ff; }
+
+.actions{
+  display:flex; justify-content:flex-end; gap:10px; margin-top:4px;
+}
+.btnGhost{
+  background:#101a2c; color:#cfe7da; border:1px solid #22314d;
+  padding:10px 14px; border-radius:12px; cursor:pointer;
+}
+.btnPrimary{
+  background:#2bb673; color:#0a0f1d; border:0;
+  padding:10px 14px; border-radius:12px; cursor:pointer;
+}

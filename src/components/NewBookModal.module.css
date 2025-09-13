@@ -1,0 +1,93 @@
+/* knobs do modal (se quiser reaproveitar em outros) */
+:root{
+  --modal-w: 480px;
+  --modal-radius: 18px;
+}
+
+/* backdrop */
+.backdrop{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.5);
+  display: grid;
+  place-items: center;
+  z-index: 1000;
+}
+
+/* caixa do modal */
+.modal{
+  width: min(82vw, var(--modal-w));
+  max-height: min(84dvh, 560px);
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  background: #0f172a;
+  color: #9fb3ce;
+  border-radius: var(--modal-radius);
+  padding: 16px 16px 12px;
+  box-shadow: 0 18px 44px rgba(0,0,0,.45);
+}
+
+/* título */
+.title{
+  color: #e6f2ec;
+  margin: 0 0 10px;
+  font-size: 35px;
+  font-weight: 750;
+}
+
+/* formulário */
+.form{ display: grid; gap: 10px; }
+
+.label{
+  display: grid; gap: 6px;
+  font-size: 14px;
+}
+
+.input{
+  background: #0b1222;
+  color: #e6f2ec;
+  border: 1px solid #23314c;
+  border-radius: 10px;
+  padding: 10px 12px;
+  width: 100%;
+}
+
+/* iOS: evita zoom automático no foco (font-size >= 16px) */
+@media (max-width: 480px){
+  .input,
+  .actions button{
+    font-size: 16px;
+    line-height: 1.35;
+    min-height: 44px;
+  }
+}
+@supports (-webkit-touch-callout: none){
+  .input,
+  .actions button{
+    font-size: 16px;
+  }
+}
+
+/* rodapé */
+.actions{
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 6px;
+}
+
+.btn{
+  appearance: none; -webkit-appearance: none;
+  border: 1px solid #1f2a44;
+  background: #0f1b34;
+  color: #9fb3ce;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.btnPrimary{
+  background: #2bb673;
+  color: #0a0f1d;
+  border: 0;
+}

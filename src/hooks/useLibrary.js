@@ -1,11 +1,28 @@
-// src/hooks/useLibrary.js
 import { useEffect, useMemo, useState } from "react";
 
-const STORAGE_KEY = "book.app.v1";
+const KEY = "book:library:v2";
+
+function load() {
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (!raw) return { books: [], activeId: null };
+    const parsed = JSON.parse(raw);
+    // sanity: garanta tipos
+    return {
+      books: Array.isArray(parsed.books) ? parsed.books : [],
+      activeId: parsed.activeId ?? null,
+    };
+  } catch {
+    return { books: [], activeId: null };
+  }
+}
+function save(state) {
+  try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {}
+}
 
 export default function useLibrary() {
-  const [books, setBooks] = useState([]);
-  const [activeId, setActiveId] = useState(null);
+  const [books, setBooks] = useState(() => load().books);
+  const [activeId, setActiveId] = useState(() => load().activeId);
 
   // Carregar 1x
   useEffect(() => {
@@ -21,46 +38,38 @@ export default function useLibrary() {
     }
   }, []);
 
-  // Salvar sempre que mudar
-  useEffect(() => {
-    try {
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({ books, activeId, updatedAt: Date.now() })
-      );
-    } catch (e) {
-      console.warn("Falha ao salvar storage:", e);
-    }
-  }, [books, activeId]);
+  // salvar sempre que mudar
+  useEffect(() => { save({ books, activeId }); }, [books, activeId]);
 
-  const addBook = (data) => {
-    const id =
-      (globalThis.crypto?.randomUUID?.() ?? String(Date.now()));
+  // helpers
+  function addBook({ title, author, pagesTotal, cover }) {
+    const id = `b_${Date.now()}_${Math.random().toString(36).slice(2,7)}`;
     const book = {
       id,
-      title: data.title?.trim() || "Sem título",
-      pagesTotal: Number(data.pagesTotal) || 0,
-      pagesRead: Number(data.pagesRead) || 0,
-      cover: data.cover || null,
+      title: title?.trim() || "Sem título",
+      author: author?.trim() || "",
+      pagesTotal: Number(pagesTotal) || 0,
+      pagesRead: 0,
+      cover: cover || null, // string dataURL
       createdAt: Date.now(),
-      updatedAt: Date.now(),
     };
-    setBooks((prev) => [...prev, book]);
+    setBooks(prev => [...prev, book]);
     setActiveId(id);
-  };
+    return id;
+  }
 
-  const updateBook = (id, patch) => {
-    setBooks((prev) =>
-      prev.map((b) =>
-        b.id === id ? { ...b, ...patch, updatedAt: Date.now() } : b
-      )
+  function updateBook(id, patch) {
+    setBooks(prev =>
+      prev.map(b => (b.id === id ? { ...b, ...patch } : b))
     );
-  };
+  }
+  return { books, activeId, setActiveId, addBook, updateBook };
 
-  const removeBook = (id) => {
-    setBooks((prev) => prev.filter((b) => b.id !== id));
-    setActiveId((prev) => (prev === id ? null : prev));
-  };
+  function removeBook(id) {
+    setBooks(prev => prev.filter(b => b.id !== id));
+    // se removi o ativo, escolhe outro
+    setActiveId(prev => (prev === id ? (books[0]?.id ?? null) : prev));
+  }
 
   const current = useMemo(
     () => books.find((b) => b.id === activeId) || books[0] || null,
