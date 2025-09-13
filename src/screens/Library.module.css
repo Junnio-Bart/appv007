@@ -1,174 +1,80 @@
-/* ===== knobs (você controla por aqui) ===== */
+/* ========= KNOBS (ajuste fácil) ========= */
 :root{
-  --panel-h: 300px;   /* <<< ALTURA FIXA do painel abaixo da logo */
-  --shelf-h: 320px;   /* altura interna usada pela prateleira */
-  --card-w: 148px;    /* largura fixa do card central */
-  --side-shift: 52%;
-  --side-scale: .86;
-  --side-depth: -80px;
+  --panel-h: 340px;          /* altura fixa do QUADRADO abaixo da logo */
+  --shelf-h: 320px;          /* altura interna onde o trilho fica */
+  --card-w: 168px;           /* largura fixa do card central */
+  --gap: 12px;               /* gap entre slides */
+  --peek: 60px;              /* “olhadinha” das laterais */
 }
 
-/* ===== o PAINEL (.section + .lib) agora tem altura fixa ===== */
+/* ========= PAINEL ========= */
 .lib{
-  height: var(--panel-h);      /* <<< tamanho do “quadrado” */
-  overflow: hidden;            /* sem rolagem dentro do painel */
+  height: var(--panel-h);
+  overflow: hidden;                /* sem rolagem */
   display: grid;
-  place-items: center;         /* centraliza carrossel (x e y) */
-  padding: 0;                  /* .section já tem padding próprio */
+  place-items: center;             /* centraliza (x e y) */
+  padding: 0;
   text-align: center;
   width: 100%;
 }
-
-/* caixa da prateleira (usa altura que você definir) */
 .libBox{
   height: var(--shelf-h);
   width: 100%;
-  max-width: calc(var(--card-w) * 2.4);
+  max-width: calc(var(--card-w) * 2.6); /* espaço p/ laterais sem quebrar */
   display: grid;
-  gap: 8px;
-  place-items: center;
-}
-
-/* prateleira do carrossel (vazio e com livros) */
-.shelfEmpty{
-  position: relative;
-  width: 100%;
-  height: 100%;
-  display: grid;
-  place-items: center;
-  perspective: 1000px;
-}
-
-/* ============== CENTRO (PLUS/CAPA) ============== */
-.centerPlusCard,
-.centerCard{
-  position: relative; z-index: 5;           /* centro por cima das laterais */
-  width: var(--card-w);
-  aspect-ratio: 7/11;
-  border-radius:15px;
-  border:2 px solid #3b82f6;
-  background:#0f172a;
-  display:grid; place-items:center;
-  box-shadow: 0 18px 40px rgba(0,0,0,.45), inset 0 0 0 2px rgba(37,99,235,.15);
-  cursor:pointer;
-  transform-origin: center;
-  transition: transform 320ms ease, opacity 320ms ease;
-  will-change: transform, opacity;
-}
-/* “+” não some */
-.centerPlusCard::before{
-  content: "+"; position:absolute; inset:0; display:grid; place-items:center;
-  font-size: 72px; font-weight: 900; line-height: 1;
-  color:#4ac092; text-shadow: 0 0 18px rgba(34,197,94,.22);
-}
-.centerCover{
-  width:90%; height:90%;
-  object-fit:cover; border-radius: inherit;
-  pointer-events:none; /* imagem não rouba clique */
-}
-
-/* ===== knobs ===== */
-:root{
-  --header-h: 105px; /* altura visual do seu header/logo */
-}
-
-/* ocupa o viewport e centraliza o “quadrado” */
-.lib{
-  height: calc(85dvh - var(--header-h));
-  overflow: hidden;
-  display: grid;
-  place-items: center;
-  padding: 0;
-  text-align: center;
-}
-
-/* “quadrado” abaixo da logo (altura fixa controlável) */
-.libBox{
-  height: var(--panel-h, 400px);
-  width: 100%;
-  max-width: calc(var(--card-w) * 2.4);
-  display: grid;
-  grid-template-rows: 1fr auto auto;
+  grid-template-rows: 1fr auto auto;   /* trilho, título, chip */
   align-items: center;
   justify-items: center;
-  gap: 5px;
+  gap: 6px;
 }
 
-/* ===== VIEWPORT + TRACK (carrossel real) ===== */
+/* ========= VIEWPORT + TRACK ========= */
 .viewport{
   position: relative;
-  width: calc(var(--card-w) + 2 * var(--peek, 0px)); /* olhadinha das laterais */
+  width: calc(var(--card-w) + 2 * var(--peek));
   margin: 0 auto;
   overflow: hidden;
 
-  /* máscara suave na beiradinha (opcional) */
-  -webkit-mask-image: linear-gradient(
-    to right,
+  /* máscara suave nas bordas (opcional) */
+  -webkit-mask-image: linear-gradient(to right,
     transparent 0,
-    black calc(var(--peek, 0px) / 2),
-    black calc(100% - var(--peek, 0px) / 2),
-    transparent 100%
-  );
-  mask-image: linear-gradient(
-    to right,
+    black calc(var(--peek) / 2),
+    black calc(100% - var(--peek) / 2),
+    transparent 100%);
+  mask-image: linear-gradient(to right,
     transparent 0,
-    black calc(var(--peek, 0px) / 2),
-    black calc(100% - var(--peek, 0px) / 2),
-    transparent 100%
-  );
+    black calc(var(--peek) / 2),
+    black calc(100% - var(--peek) / 2),
+    transparent 100%);
 }
-
 .track{
   display: flex;
-  gap: var(--gap, 16px);
-  /* translateX = peek - index * (card + gap) + dx (drag) */
-  transform: translateX(
-    calc(var(--peek, 0px) - var(--index, 0) * (var(--card-w) + var(--gap, 16px)) + var(--dx, 0px))
-  );
-  transition: transform 320ms ease;
+  gap: var(--gap);
+  align-items: center;
+  height: 100%;
   will-change: transform;
-}
-.dragging .track{
-  transition: none; /* durante o drag, sem easing */
-}
+  transition: transform 220ms ease;
 
-/* ===== SLIDES ===== */
+  /* translateX = peek - index * (card + gap) + dx */
+  transform: translateX(calc(
+    var(--peek) - (var(--index) * (var(--card-w) + var(--gap))) + var(--dx)
+  ));
+}
+.dragging .track{ transition: none; }
+
+/* ========= SLIDES ========= */
 .slide{
   flex: 0 0 auto;
   width: var(--card-w);
-  aspect-ratio: 7/11;
+  aspect-ratio: 7 / 11;
   border-radius: 15px;
   display: grid;
   place-items: center;
   cursor: pointer;
   transform-origin: center;
   transition: transform 220ms ease, filter 220ms ease, opacity 220ms ease;
-  touch-action: manipulation; 
+  touch-action: manipulation;      /* iOS não inventa zoom */
 }
-
-/* capa */
-.cover{
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 13px;
-  pointer-events: none;
-}
-
-/* estados visuais: centro grande, laterais menores/apagadas */
-.isCenter{
-  transform: scale(1);
-  filter: brightness(1);
-  outline: 2px solid #3b82f6;
-  box-shadow: 0 18px 40px rgba(0,0,0,.45), inset 0 0 0 2px rgba(37,99,235,.15);
-}
-.isSide{
-  transform: scale(.75);
-  filter: brightness(.88);
-  opacity: .90;
-}
-
-/* card normal e card de "+" (bordas iguais ao seu design) */
 .card, .plus{
   border: 2px solid #3b82f6;
   background: #0f172a;
@@ -183,73 +89,61 @@
   text-shadow: 0 0 18px rgba(34,197,94,.22);
 }
 
+/* capa */
+.cover{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 13px;
+  pointer-events: none; /* imagem não “rouba” o clique */
+}
+
+/* centro grande, laterais menores */
+.isCenter{
+  transform: scale(1);
+  filter: brightness(1);
+  outline: 2px solid #3b82f6;
+  box-shadow: 0 18px 40px rgba(0,0,0,.45), inset 0 0 0 2px rgba(37,99,235,.15);
+}
+.isSide{
+  transform: scale(.78);       /* ← laterais menores */
+  filter: brightness(.88);
+  opacity: .92;
+}
+
 /* setas (opcionais) */
 .nav{
   position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
+  top: 50%; transform: translateY(-50%);
   width: 40px; height: 40px;
   border-radius: 12px;
   border: 1px solid #24324e;
-  background: #0f172a;
-  color: #cfe7da;
+  background: #0f172a; color: #cfe7da;
   display: grid; place-items: center;
   box-shadow: 0 8px 18px rgba(0,0,0,.25);
 }
 .nav.left{  left: -52px; }
 .nav.right{ right: -52px; }
 .nav:disabled{ opacity:.45; pointer-events:none; }
-
-/* título + chip (iguais ao seu estilo) */
-.libTitle{
-  margin: 4px 0 2px;
-  font-size: 28px;
-  font-weight: 800;
-  letter-spacing: .2px;
-}
-.libChip{
-  display: inline-block; 
-  margin-top: 0;
-  background: #0b1222; 
-  color: #4ac092;
-  border: 2px solid #444850; 
-  border-radius: 12px;
-  padding: 7px 16px; 
-  font-weight: 700; 
-  font-size: 18px;
-  box-shadow: inset 0 0 0 2px rgba(0,0,0,.15);
-}
-
-/* placeholder quando não há capa */
-.coverPlaceholder{ font-size: 44px; opacity: .7; }
-
-/* responsivo: aproxima setas em telas estreitas */
 @media (max-width: 380px){
   .nav.left{  left: -44px; }
   .nav.right{ right: -44px; }
 }
 
-
-/* Transições suaves (se ainda não tiver nas classes) */
-.centerCard, .centerPlusCard, .sideCard{
-  transition: transform 320ms ease, opacity 320ms ease;
-  will-change: transform, opacity;
-}
-
-/* ============== TÍTULO + CHIP ============== */
+/* ===== Título / autor / chip ===== */
 .libTitle{
-  margin: 4px 0 4px;  /* bem perto do card */
-  font-size: 30px; font-weight: 770; letter-spacing:.3px;
+  margin: 4px 0 0;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: .2px;
 }
-/* autor sob o título */
 .libAuthor{
   margin: 0 0 2px;
   font-size: 14px;
   font-style: italic;
-  color: #7ca6ff;         /* azul suave */
+  color: #7ca6ff;
   opacity: .9;
 }
-/* chip base vira botão clicável */
 .libChip{
   display:inline-block;
   background:#0b1222;
@@ -263,24 +157,12 @@
   cursor:pointer;
 }
 
-/* variações por banda */
+/* bandas de cor do chip */
 .pRed   { background:#2b1518; border-color:#5b1f27; color:#ffd6d9; }
 .pYellow{ background:#2a2411; border-color:#52461a; color:#ffe9a6; }
 .pGreen { background:#13261f; border-color:#23533f; color:#9cf0c9; }
 .pBlue  { background:#13223a; border-color:#25426c; color:#b8d7ff; }
 
-
-/* ============== PLACEHOLDERS/LEGADO ============== */
-.coverPlaceholder{ font-size:44px; opacity:.7; }
+/* utilidades */
+.coverPlaceholder{ font-size: 44px; opacity: .7; }
 .addBtn{ display:none; }
-
-/* ============== RESPONSIVO ============== */
-@media (max-width: 380px){
-  :root{
-    --shelf-w: 360px;
-    --side-shift: 44%;
-    --side-scale: .80;
-    --side-depth: -80px;
-  }
-}
-
