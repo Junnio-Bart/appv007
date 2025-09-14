@@ -6,22 +6,15 @@ import EditPagesModal from "../components/EditPagesModal.jsx";
 import ModalMount from "../components/ModalMount.jsx";
 import s from "./Library.module.css";
 
-const viewportRef  = useRef(null);
-const startXRef    = useRef(0);
-const lastXRef     = useRef(0);
-const didDragRef   = useRef(false);
-const draggingRef  = useRef(false);
-
-// lê variáveis CSS numéricas da :root
+// helpers fora do componente (não são hooks)
 function cssNum(varName, fallback = 0) {
   const v = getComputedStyle(document.documentElement).getPropertyValue(varName);
   const n = parseFloat(v);
   return Number.isFinite(n) ? n : fallback;
 }
-function clientXof(e){
+function clientXof(e) {
   return e?.clientX ?? e?.touches?.[0]?.clientX ?? e?.changedTouches?.[0]?.clientX ?? 0;
 }
-
 
 export default function Library({ onGoProgress }) {
   const { books, activeId, setActiveId, addBook, updateBook } = useLibrary();
@@ -95,20 +88,13 @@ export default function Library({ onGoProgress }) {
   const lastXRef = useRef(0);
   const lastTRef = useRef(0);
 
-  function clientXof(e) {
-    return e.clientX ?? e.touches?.[0]?.clientX ?? 0;
-  }
-
   function onPointerDown(e) {
     const x = clientXof(e);
     startXRef.current = x;
     lastXRef.current = x;
     lastTRef.current = performance.now();
     didDragRef.current = false;
-
     setDragging(true);
-    // não usamos setPointerCapture para não matar os cliques nos botões,
-    // e deixamos o CSS com `touch-action: pan-y` (no .viewport) para o mobile.
   }
 
   function onPointerMove(e) {
@@ -132,47 +118,44 @@ export default function Library({ onGoProgress }) {
 
   function onPointerUp(e) {
     if (!dragging) return;
-    
+
     const x = clientXof(e);
     const dt = Math.max(1, performance.now() - lastTRef.current);
     const vx = (x - lastXRef.current) / dt; // px/ms
     const dist = x - startXRef.current;
 
-    // thresholds
-    const cardW = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--card-w")) || 200;
-    const DIST_TH = cardW * 0.28;        // ~28% do card
-    const SPEED_TH = 0.45;               // 0.45 px/ms ~ 450px/s
-    const TAP_TH = 8;                    // até 8px é tap
+    const cardW   = cssNum("--card-w", 200);
+    const DIST_TH = cardW * 0.28;   // ~28% do card
+    const SPEED_TH = 0.45;          // 0.45 px/ms
+    const TAP_TH   = 8;
 
+    // TAP (terços laterais navegam, centro deixa o click do botão agir)
     if (Math.abs(dist) <= TAP_TH && !didDragRef.current) {
       const vp = viewportRef.current?.getBoundingClientRect();
       if (vp) {
         const rel = e.clientX - vp.left;
         if (rel < vp.width * 0.33 && prevIndex != null) {
-          didDragRef.current = true; // evita disparar o onClick do botão depois
+          didDragRef.current = true;
           goPrev();
         } else if (rel > vp.width * 0.67 && nextIndex != null) {
           didDragRef.current = true;
           goNext();
         }
-        // se tocou no terço central, NÃO chamamos nada aqui:
-        // o clique do <button> do slide vai decidir:
-        //  - se for lateral → traz pro centro
-        //  - se for o centro → abre a ação real
       }
       finishGesture();
       return;
     }
-    // SWIPE → decide por distância/velocidade
-  if ((dist < -DIST_TH) || (vx < -SPEED_TH)) {
-    didDragRef.current = true;
-    goNext();
-  } else if ((dist > DIST_TH) || (vx > SPEED_TH)) {
-    didDragRef.current = true;
-    goPrev();
+
+    // SWIPE → distância/velocidade
+    if ((dist < -DIST_TH) || (vx < -SPEED_TH)) {
+      didDragRef.current = true;
+      goNext();
+    } else if ((dist > DIST_TH) || (vx > SPEED_TH)) {
+      didDragRef.current = true;
+      goPrev();
+    }
+    finishGesture();
   }
-  finishGesture();
-}
 
   function onPointerCancel() { finishGesture(); }
   function onPointerLeave()  { if (dragging) finishGesture(); }
@@ -217,10 +200,9 @@ export default function Library({ onGoProgress }) {
       className={`section ${s.lib}`}
       aria-label="Biblioteca"
       style={{
-        // controles do “quadrado” abaixo da logo:
-        "--panel-h": "620px", // altura do painel
-        "--shelf-h": "480px", // altura do espaço da prateleira
-        "--card-w": "200px",  // largura fixa do card
+        "--panel-h": "620px",
+        "--shelf-h": "480px",
+        "--card-w": "200px",
         "--gap": "12px",
         "--peek": "64px",
       }}
