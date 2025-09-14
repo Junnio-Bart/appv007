@@ -200,10 +200,8 @@ export default function Library({ onGoProgress }) {
       className={`section ${s.lib}`}
       aria-label="Biblioteca"
       style={{
-        /* altura do painel: nunca maior que o espaço visível */
-        "--panel-h": "clamp(420px, 58dvh, calc(100dvh - var(--header-h) - 24px))",
-        /* altura interna da prateleira (um pouquinho menor que o painel) */
-        "--shelf-h": "calc(var(--panel-h) - 140px)",
+       "--panel-h": "620px",
+        "--shelf-h": "480px",
         "--card-w": "200px",
         "--gap": "12px",
         "--peek": "64px",
@@ -299,3 +297,4 @@ export default function Library({ onGoProgress }) {
     </section>
   );
 }
+
