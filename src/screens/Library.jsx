@@ -6,6 +6,23 @@ import EditPagesModal from "../components/EditPagesModal.jsx";
 import ModalMount from "../components/ModalMount.jsx";
 import s from "./Library.module.css";
 
+const viewportRef  = useRef(null);
+const startXRef    = useRef(0);
+const lastXRef     = useRef(0);
+const didDragRef   = useRef(false);
+const draggingRef  = useRef(false);
+
+// lê variáveis CSS numéricas da :root
+function cssNum(varName, fallback = 0) {
+  const v = getComputedStyle(document.documentElement).getPropertyValue(varName);
+  const n = parseFloat(v);
+  return Number.isFinite(n) ? n : fallback;
+}
+function clientXof(e){
+  return e?.clientX ?? e?.touches?.[0]?.clientX ?? e?.changedTouches?.[0]?.clientX ?? 0;
+}
+
+
 export default function Library({ onGoProgress }) {
   const { books, activeId, setActiveId, addBook, updateBook } = useLibrary();
 
@@ -115,6 +132,7 @@ export default function Library({ onGoProgress }) {
 
   function onPointerUp(e) {
     if (!dragging) return;
+    
     const x = clientXof(e);
     const dt = Math.max(1, performance.now() - lastTRef.current);
     const vx = (x - lastXRef.current) / dt; // px/ms
@@ -127,28 +145,34 @@ export default function Library({ onGoProgress }) {
     const TAP_TH = 8;                    // até 8px é tap
 
     if (Math.abs(dist) <= TAP_TH && !didDragRef.current) {
-      // TAP → quem foi clicado? dividimos viewport em 3 zonas
       const vp = viewportRef.current?.getBoundingClientRect();
       if (vp) {
         const rel = e.clientX - vp.left;
-        if (rel < vp.width * 0.33)      goPrev();
-        else if (rel > vp.width * 0.67) goNext();
-        else                            handleCenterClick();
-      } else {
-        handleCenterClick();
+        if (rel < vp.width * 0.33 && prevIndex != null) {
+          didDragRef.current = true; // evita disparar o onClick do botão depois
+          goPrev();
+        } else if (rel > vp.width * 0.67 && nextIndex != null) {
+          didDragRef.current = true;
+          goNext();
+        }
+        // se tocou no terço central, NÃO chamamos nada aqui:
+        // o clique do <button> do slide vai decidir:
+        //  - se for lateral → traz pro centro
+        //  - se for o centro → abre a ação real
       }
       finishGesture();
       return;
     }
-
-    // SWIPE → decide próximo/volta
-    if ((dist < -DIST_TH) || (vx < -SPEED_TH)) {
-      goNext();
-    } else if ((dist > DIST_TH) || (vx > SPEED_TH)) {
-      goPrev();
-    }
-    finishGesture();
+    // SWIPE → decide por distância/velocidade
+  if ((dist < -DIST_TH) || (vx < -SPEED_TH)) {
+    didDragRef.current = true;
+    goNext();
+  } else if ((dist > DIST_TH) || (vx > SPEED_TH)) {
+    didDragRef.current = true;
+    goPrev();
   }
+  finishGesture();
+}
 
   function onPointerCancel() { finishGesture(); }
   function onPointerLeave()  { if (dragging) finishGesture(); }
