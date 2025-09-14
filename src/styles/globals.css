@@ -196,3 +196,16 @@ p { font-size: var(--fs-body); color: var(--muted); margin:0 }
 /* ===== Vazio ===== */
 .empty-lib{ text-align:center; padding:32px 12px 8px; color:#cfe7da; }
 
+/* evita pull-to-refresh / overscroll geral */
+html, body { height: 100%; overscroll-behavior: none; }
+
+/* quando a aba ativa for a Biblioteca, não deixa a página rolar */
+.app[data-tab="library"] {
+  height: 100dvh;
+  overflow: hidden;
+}
+.app[data-tab="library"] .app-main {
+  height: calc(100dvh - var(--header-h, 96px));
+  overflow: hidden;
+  padding-bottom: env(safe-area-inset-bottom); /* iOS */
+}

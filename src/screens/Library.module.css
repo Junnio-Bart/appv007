@@ -34,7 +34,7 @@
   width: calc(var(--card-w) + 2 * var(--peek));
   margin: 0 auto;
   overflow: hidden;
-  touch-action: pan-y;
+  touch-action: pan-x;
 
   /* máscara suave nas bordas (opcional) */
   -webkit-mask-image: linear-gradient(to right,
