@@ -200,12 +200,12 @@ export default function Library({ onGoProgress }) {
       className={`section ${s.lib}`}
       aria-label="Biblioteca"
       style={{
-    "--panel-h": "620px",
-    "--shelf-h": "480px",
-    "--card-w": "200px",
-    "--gap": "12px",
-    "--peek": "64px",
-  }}
+        "--panel-h": "min(620px, calc(100dvh - var(--header-h) - 16px))",
+        "--shelf-h": "min(480px, calc(var(--panel-h) - 140px))",
+        "--card-w": "200px",
+        "--gap": "12px",
+        "--peek": "64px",
+      }}
     >
       <div className={s.libBox}>
         {/* viewport + trilha */}
@@ -297,6 +297,7 @@ export default function Library({ onGoProgress }) {
     </section>
   );
 }
+
 
 
 
