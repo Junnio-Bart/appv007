@@ -34,6 +34,7 @@
   width: calc(var(--card-w) + 2 * var(--peek));
   margin: 0 auto;
   overflow: hidden;
+  touch-action: pan-y;
 
   /* máscara suave nas bordas (opcional) */
   -webkit-mask-image: linear-gradient(to right,
@@ -132,13 +133,15 @@
 
 /* ===== Título / autor / chip ===== */
 .libTitle{
-  margin: 4px 0 0;
+  margin: 2px 0 0;
   font-size: 28px;
-  font-weight: 800;
+  font-weight: 750;
   letter-spacing: .2px;
 }
+.titleAdd{ margin-bottom: 30px; }
+
 .libAuthor{
-  margin: 0 0 2px;
+  margin: 0 0 5px;
   font-size: 14px;
   font-style: italic;
   color: #7ca6ff;
@@ -147,11 +150,11 @@
 .libChip{
   display:inline-block;
   background:#0b1222;
-  border:2px solid #2a3348;
+  border:1px solid #2a3348;
   color:#4ac092;
   border-radius:12px;
   padding:7px 16px;
-  font-weight:800;
+  font-weight:700;
   font-size:16px;
   box-shadow: inset 0 0 0 2px rgba(0,0,0,.12);
   cursor:pointer;

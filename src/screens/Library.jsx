@@ -6,17 +6,14 @@ import EditPagesModal from "../components/EditPagesModal.jsx";
 import ModalMount from "../components/ModalMount.jsx";
 import s from "./Library.module.css";
 
-const SWIPE_START = 8;   // px para considerar que saiu de "tap"
-const SWIPE_COMMIT = 40; // px para trocar de slide
-
 export default function Library({ onGoProgress }) {
-  // precisa de updateBook no seu useLibrary
   const { books, activeId, setActiveId, addBook, updateBook } = useLibrary();
 
+  // -------- estado local --------
   const [showNewBook, setShowNewBook] = useState(false);
   const [showPages, setShowPages] = useState(false);
 
-  // trilho real: livros + card "+" no final (sem loop infinito)
+  // fila real: livros + card “novo” no fim
   const items = useMemo(() => [...books, { id: "__NEW__", isNew: true }], [books]);
 
   // índice atual baseado no activeId
@@ -25,7 +22,7 @@ export default function Library({ onGoProgress }) {
     return i >= 0 ? i : 0;
   });
 
-  // sincroniza quando activeId mudar (ex.: depois de salvar)
+  // quando activeId mudar (ex.: depois de salvar), sincroniza índice
   useEffect(() => {
     const i = items.findIndex((it) => it.id === activeId);
     if (i >= 0 && i !== index) setIndex(i);
@@ -53,59 +50,110 @@ export default function Library({ onGoProgress }) {
 
   function handleCenterClick() {
     if (current?.isNew) setShowNewBook(true);
-    else { setActiveId(current.id); onGoProgress?.(); }
+    else {
+      setActiveId(current.id);
+      onGoProgress?.();
+    }
   }
 
-  // clicar num slide lateral traz pro centro
+  // clicar em um slide lateral leva ao centro (ou abre se já for o centro)
+  const didDragRef = useRef(false);
   function handleSlideClick(i) {
-    if (i === index) handleCenterClick();
-    else {
+    if (didDragRef.current) return; // ignorar tap depois de um drag
+    if (i === index) {
+      handleCenterClick();
+    } else {
       setIndex(i);
       const it = items[i];
       if (it && !it.isNew) setActiveId(it.id);
     }
   }
 
-  // ---------- drag / swipe (tap + swipe coexistem) ----------
+  // ---------- swipe/drag unificado (pointer) ----------
+  const viewportRef = useRef(null);
   const [dragging, setDragging] = useState(false);
   const [dx, setDx] = useState(0);
-  const startXRef = useRef(0);
-  const movedRef = useRef(false);
 
-  function getX(e) {
-    return e.clientX ?? (e.touches && e.touches[0]?.clientX) ?? 0;
+  const startXRef = useRef(0);
+  const lastXRef = useRef(0);
+  const lastTRef = useRef(0);
+
+  function clientXof(e) {
+    return e.clientX ?? e.touches?.[0]?.clientX ?? 0;
   }
 
   function onPointerDown(e) {
-    startXRef.current = getX(e);
-    movedRef.current = false;
+    const x = clientXof(e);
+    startXRef.current = x;
+    lastXRef.current = x;
+    lastTRef.current = performance.now();
+    didDragRef.current = false;
+
     setDragging(true);
+    // não usamos setPointerCapture para não matar os cliques nos botões,
+    // e deixamos o CSS com `touch-action: pan-y` (no .viewport) para o mobile.
   }
+
   function onPointerMove(e) {
     if (!dragging) return;
-    const x = getX(e);
-    const delta = x - startXRef.current;
-    if (!movedRef.current && Math.abs(delta) > SWIPE_START) {
-      movedRef.current = true; // passou do “tap”
-    }
-    setDx(delta);
+    const x = clientXof(e);
+    const now = performance.now();
+    const dist = x - startXRef.current;
+
+    // considera como drag se passou do limiar
+    if (Math.abs(dist) > 6) didDragRef.current = true;
+
+    setDx(dist);
+    lastXRef.current = x;
+    lastTRef.current = now;
   }
-  function endGesture(commit = false) {
+
+  function finishGesture() {
     setDragging(false);
     setDx(0);
-    movedRef.current = false;
   }
-  function onPointerUp() {
-    if (!dragging) return;
-    if (movedRef.current) {
-      if (dx < -SWIPE_COMMIT && nextIndex != null) goNext();
-      else if (dx > SWIPE_COMMIT && prevIndex != null) goPrev();
-    }
-    endGesture();
-  }
-  function onPointerCancel() { endGesture(); }
 
-  // um slide (capa ou +)
+  function onPointerUp(e) {
+    if (!dragging) return;
+    const x = clientXof(e);
+    const dt = Math.max(1, performance.now() - lastTRef.current);
+    const vx = (x - lastXRef.current) / dt; // px/ms
+    const dist = x - startXRef.current;
+
+    // thresholds
+    const cardW = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--card-w")) || 200;
+    const DIST_TH = cardW * 0.28;        // ~28% do card
+    const SPEED_TH = 0.45;               // 0.45 px/ms ~ 450px/s
+    const TAP_TH = 8;                    // até 8px é tap
+
+    if (Math.abs(dist) <= TAP_TH && !didDragRef.current) {
+      // TAP → quem foi clicado? dividimos viewport em 3 zonas
+      const vp = viewportRef.current?.getBoundingClientRect();
+      if (vp) {
+        const rel = e.clientX - vp.left;
+        if (rel < vp.width * 0.33)      goPrev();
+        else if (rel > vp.width * 0.67) goNext();
+        else                            handleCenterClick();
+      } else {
+        handleCenterClick();
+      }
+      finishGesture();
+      return;
+    }
+
+    // SWIPE → decide próximo/volta
+    if ((dist < -DIST_TH) || (vx < -SPEED_TH)) {
+      goNext();
+    } else if ((dist > DIST_TH) || (vx > SPEED_TH)) {
+      goPrev();
+    }
+    finishGesture();
+  }
+
+  function onPointerCancel() { finishGesture(); }
+  function onPointerLeave()  { if (dragging) finishGesture(); }
+
+  // ---------- render de 1 slide ----------
   const renderSlide = (it, i) => {
     const isCenter = i === index;
     const cls = [
@@ -133,33 +181,36 @@ export default function Library({ onGoProgress }) {
     );
   };
 
-  // chip (cores por banda)
+  // ---------- chip de progresso ----------
   const read = Number(current?.pagesRead || 0);
   const total = Number(current?.pagesTotal || 0);
   const pct = total > 0 ? Math.round((read / total) * 100) : 0;
-  const bandClass = pct < 40 ? s.pRed : pct < 65 ? s.pYellow : pct < 85 ? s.pGreen : s.pBlue;
+  const bandClass =
+    pct < 40 ? s.pRed : pct < 65 ? s.pYellow : pct < 85 ? s.pGreen : s.pBlue;
 
   return (
     <section
       className={`section ${s.lib}`}
       aria-label="Biblioteca"
       style={{
-        // knobs inline – ajuste se quiser sobrescrever os do CSS
-        "--panel-h": "640px",
-        "--shelf-h": "420px",
-        "--card-w": "168px",
-        "--peek": "60px",
+        // controles do “quadrado” abaixo da logo:
+        "--panel-h": "620px", // altura do painel
+        "--shelf-h": "480px", // altura do espaço da prateleira
+        "--card-w": "200px",  // largura fixa do card
         "--gap": "12px",
+        "--peek": "64px",
       }}
     >
       <div className={s.libBox}>
-        {/* viewport + trilho real */}
+        {/* viewport + trilha */}
         <div
+          ref={viewportRef}
           className={[s.viewport, dragging ? s.dragging : ""].join(" ")}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
           onPointerCancel={onPointerCancel}
+          onPointerLeave={onPointerLeave}
           onTouchStart={onPointerDown}
           onTouchMove={onPointerMove}
           onTouchEnd={onPointerUp}
@@ -171,15 +222,28 @@ export default function Library({ onGoProgress }) {
             {items.map((it, i) => renderSlide(it, i))}
           </div>
 
-          {/* setas (opcionais) */}
-          <button className={`${s.nav} ${s.left}`}  onClick={goPrev} disabled={prevIndex == null} aria-label="Anterior">‹</button>
-          <button className={`${s.nav} ${s.right}`} onClick={goNext} disabled={nextIndex == null} aria-label="Próximo">›</button>
+          <button
+            className={`${s.nav} ${s.left}`}
+            onClick={goPrev}
+            disabled={prevIndex == null}
+            aria-label="Anterior"
+          >
+            ‹
+          </button>
+          <button
+            className={`${s.nav} ${s.right}`}
+            onClick={goNext}
+            disabled={nextIndex == null}
+            aria-label="Próximo"
+          >
+            ›
+          </button>
         </div>
 
         {/* título / autor / chip */}
         {current?.isNew || isEmpty ? (
           <>
-            <h2 className={s.libTitle}>Adicione um livro</h2>
+            <h2 className={`${s.libTitle} ${s.titleAdd}`}>Adicione um livro</h2>
             <div className={s.libChip}>??? / ???</div>
           </>
         ) : (
@@ -199,16 +263,18 @@ export default function Library({ onGoProgress }) {
         )}
       </div>
 
-      {/* Modal: novo livro */}
+      {/* Modais */}
       <ModalMount open={showNewBook}>
         <NewBookModal
           open={showNewBook}
           onClose={() => setShowNewBook(false)}
-          onSave={(data) => { addBook(data); setShowNewBook(false); }}
+          onSave={(data) => {
+            addBook(data);
+            setShowNewBook(false);
+          }}
         />
       </ModalMount>
 
-      {/* Modal: editar páginas */}
       <ModalMount open={showPages}>
         <EditPagesModal
           open={showPages}
@@ -217,8 +283,6 @@ export default function Library({ onGoProgress }) {
           onSave={({ pagesRead, pagesTotal }) => {
             if (updateBook && current && !current.isNew) {
               updateBook(current.id, { pagesRead, pagesTotal });
-            } else {
-              console.warn("Faltou updateBook no useLibrary()");
             }
             setShowPages(false);
           }}
