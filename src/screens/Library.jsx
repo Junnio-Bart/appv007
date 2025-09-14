@@ -105,6 +105,7 @@ export default function Library({ onGoProgress }) {
 
     // considera como drag se passou do limiar
     if (Math.abs(dist) > 6) didDragRef.current = true;
+    e.preventDefault();
 
     setDx(dist);
     lastXRef.current = x;
@@ -297,7 +298,3 @@ export default function Library({ onGoProgress }) {
     </section>
   );
 }
-
-
-
-

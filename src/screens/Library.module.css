@@ -31,10 +31,15 @@
 /* ========= VIEWPORT + TRACK ========= */
 .viewport{
   position: relative;
-  width: calc(var(--card-w) + 2 * var(--peek));
+  width: calc(var(--card-w) + 2 * var(--peek, 0px));
+  height: var(--shelf-h);
   margin: 0 auto;
   overflow: hidden;
   touch-action: pan-x;
+  overscroll-behavior: contain;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: grab;
 
   /* máscara suave nas bordas (opcional) */
   -webkit-mask-image: linear-gradient(to right,
@@ -48,6 +53,9 @@
     black calc(100% - var(--peek) / 2),
     transparent 100%);
 }
+
+.viewport:active{ cursor: grabbing; }
+
 .track{
   display: flex;
   gap: var(--gap);

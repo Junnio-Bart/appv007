@@ -209,3 +209,12 @@ html, body { height: 100%; overscroll-behavior: none; }
   overflow: hidden;
   padding-bottom: env(safe-area-inset-bottom); /* iOS */
 }
+
+/* Centro absoluto do painel da Library (aba Biblioteca) */
+.app[data-tab="library"] .app-main{
+  min-height: calc(100dvh - var(--header-h)); /* ocupa o viewport abaixo do header */
+  display: grid;
+  place-items: center;                         /* centraliza horizontal + vertical */
+  padding: 0 16px 16px;                        /* respiro nas bordas */
+  overflow: hidden;                            /* evita scroll acidental */
+}
