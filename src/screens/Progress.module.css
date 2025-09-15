@@ -1,11 +1,175 @@
-/* src/screens/Progress.module.css */
 .card{
-  margin-top:8px; background:#0f172a; border:1px solid #22314d;
-  border-radius:16px; padding:12px; box-shadow:0 10px 28px rgba(0,0,0,.25);
+  margin-top:12px; 
+  background:#0f172a; 
+  border:1px solid #22314d;
+  border-radius:16px; 
+  padding:12px; 
+  box-shadow:0 10px 28px rgba(0,0,0,.25);
 }
-.controls{
-  display:flex; align-items:center; gap:10px; margin-top:10px;
+
+/* === EMPTY === */
+.emptyCard{
+  margin-top:12px; background:#0f172a; border:1px solid #22314d;
+  border-radius:16px; padding:16px; text-align:left;
 }
+.emptyCard h3{ margin:0 0 6px; font-size:18px; font-weight:800; }
+.emptyCard p{ opacity:.85; margin:0 0 10px; }
+
+
+
+/* === HEADER === */
+.header{
+  display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;
+}
+.title{ font-size:18px; font-weight:800; }
+.badge{ padding:4px 10px; border-radius:10px; background:#0b1a2a; border:1px solid #1e293b; }
+
+/* ===== Top / Title pill ===== */
+.top{ 
+  display:grid; 
+  justify-items:center; 
+  row-gap:8px; 
+  margin-bottom:10px; }
+
+.titleWrap{ position:relative; 
+  display:grid; 
+  justify-items:center; 
+}
+
+/* PILL do título com animação */
+.titlePill{
+  position: relative;                      /* para posicionar a seta dentro */
+  padding: 10px 34px 10px 14px;            /* espaço à direita já reservado para a seta */
+  border-radius: 14px;
+  background: #0b1a2a;
+  border: 1px solid #1e293b;
+  font-weight: 800;
+  font-size: 16px;
+  color: #e6f2ec;
+  display: inline-flex;                    /* centraliza o texto */
+  align-items: center;
+  gap: 8px;
+  width: auto;
+  transition: min-width .28s ease, padding .28s ease, box-shadow .28s ease;
+  box-shadow: 0 10px 28px rgba(0,0,0,.25);
+}
+.titlePill.open{
+  min-width: 280px;                        /* “expande” quando abre */
+  padding-right: 40px;
+}
+
+/* SETINHA: vai para o canto e gira ao abrir */
+.caret{
+  position: absolute;
+  right: 12px;                             /* canto direito do pill */
+  top: 50%;
+  transform: translateY(-50%) rotate(0deg);
+  transition: transform .25s ease, right .25s ease, opacity .2s ease;
+  opacity: .85;
+  font-size: 12px;
+}
+.titlePill.open .caret{
+  transform: translateY(-50%) rotate(180deg);
+  right: 12px;                             /* continua colada no canto enquanto o pill cresce */
+}
+/* status chip embaixo */
+.subInfo{ display:grid; justify-items:center; }
+.badgeReading,
+.badgeDone{
+  margin-top:4px;
+  padding:6px 10px; border-radius:10px; font-weight:700; font-size:12px;
+  border:1px solid #1e293b; background:#0b1220; color:#cbd5e1;
+}
+.badgeDone{ background:#12311f; border-color:#1f4730; color:#a8f5bf; }
+
+/* DROPDOWN centralizado com fade/scale */
+.titleWrap{ position: relative; display: grid; justify-items: center; }
+
+.menu{
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translate(-50%, 8px) scale(.98);  /* levinho pra cima e um pouco menor */
+  opacity: 0;
+  pointer-events: none;
+  background: #0b1a2a;
+  border: 1px solid #1e293b;
+  border-radius: 12px;
+  box-shadow: 0 16px 40px rgba(0,0,0,.45);
+  padding: 6px;
+  min-width: 260px;
+  max-width: 90vw;
+  z-index: 5;
+  transition: transform .18s ease, opacity .18s ease;
+}
+
+.menuOpen{
+  opacity: 1;
+  transform: translate(-50%, 12px) scale(1);   /* desce e “cresce” suavemente */
+  pointer-events: auto;
+}
+
+  .menuEmpty{
+  opacity:.8; padding:10px; font-size:14px; text-align:center;
+  }
+
+/* itens do menu com pill de % moderninha */
+.menuItem{
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: transparent;
+  border: none;
+  color: #e6f2ec;
+  text-align: left;
+}
+.menuItem:hover{ background: #0e2238; }
+  
+.menuTitle{
+  font-size: 14px; font-weight: 600;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.menuPct{
+  font-size: 12px; font-weight: 700;
+  padding: 2px 8px; border-radius: 999px;
+  background: #132035; color: #7dd3fc;
+  border: 1px solid #1e293b;
+}
+
+
+/* === CHIPS === */
+.chips{ display:grid; grid-template-columns: repeat(3,1fr); gap:10px; margin:12px 0 16px; }
+.chip{
+  background:#0b1a2a; border:1px solid #1e293b; border-radius:14px; padding:12px; text-align:center;
+}
+.chip strong{ font-size:22px; display:block; }
+.chip small{ opacity:.8; font-size:12px; }
+
+/* === GRID === */
+.grid{ background:#0b1a2a; border:1px solid #1e293b; border-radius:16px; padding:14px; }
+.row{ display:grid; grid-template-columns: 24px 1fr 36px; align-items:center; gap:8px; margin:6px 0; }
+.rowIdx{
+  width:24px; height:24px; display:grid; place-items:center; border-radius:8px;
+  background:#0e1826; border:1px solid #1e293b; font-size:12px;
+}
+.blocks{ display:grid; grid-template-columns: repeat(10, 1fr); gap:6px; }
+.block{ height:16px; border-radius:6px; background:#0e1826; border:1px solid #1e293b; }
+.rowTime{ color:#eab308; font-weight:700; }
+
+/* === TODAY === */
+.today{ text-align:center; margin:14px 0 6px; }
+.today small{ display:block; opacity:.8; }
+.today strong{ font-size:28px; }
+
+/* === ACTIONS === */
+.actions{ display:flex; gap:10px; justify-content:center; margin-top:12px; }
+
+/* extras usados no preview anterior */
+.controls{ display:flex; align-items:center; gap:10px; margin-top:10px; }
 .num{
   width:70px; text-align:center; background:#0b1222; color:#e6f2ec;
   border:1px solid #23314c; border-radius:10px; padding:8px;
@@ -15,3 +179,30 @@
   margin-left:8px; width:120px; background:#0b1222; color:#e6f2ec;
   border:1px solid #23314c; border-radius:10px; padding:8px;
 }
+/* wrapper sem “cara de card” */
+.wrap{
+  /* nada de background/borda aqui; só espaçamento */
+  padding: 10px 15px 16px;
+}
+/* === Barra de 3 mostradores (retângulo preto) === */
+.statsBar{
+  background:#000000;
+  border:1px solid #000000;
+  border-radius:8px;
+  padding:14px;
+  display:grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap:10px;
+  margin:18px 0 16px;
+  box-shadow:0 10px 28px rgba(0,0,0,.25);
+}
+.stat{ text-align:center; display:grid; gap:4px; }
+.kpi{
+  font-size:24px; font-weight:800; color:#4ac092; line-height:1;
+}
+.kpiLabel{ font-size:12px; color:#a7f3d0; opacity:.9; }
+
+/* === mostrador inferior (Restantes) === */
+.bottomStat{ text-align:center; margin:14px 0 6px; }
+.bottomLabel{ display:block; font-size:12px; opacity:.85; margin-bottom:4px; }
+.bottomValue{ font-size:28px; font-weight:800; color:#4ac092; }

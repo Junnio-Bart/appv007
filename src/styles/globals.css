@@ -123,7 +123,7 @@ p { font-size: var(--fs-body); color: var(--muted); margin:0 }
   display: flex;
   justify-content: center;
   padding: calc(env(safe-area-inset-top, 0px) + 6px) 0 16px; /* notch + pouco espaço */
-  background: #0b1222;
+  background: #0f172a;
 }
 
 /* botão “limpo” */

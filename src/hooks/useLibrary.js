@@ -1,3 +1,4 @@
+// /src/hooks/useLibrary.js
 import { useEffect, useMemo, useState } from "react";
 
 const KEY = "book:library:v2";
@@ -7,7 +8,6 @@ function load() {
     const raw = localStorage.getItem(KEY);
     if (!raw) return { books: [], activeId: null };
     const parsed = JSON.parse(raw);
-    // sanity: garanta tipos
     return {
       books: Array.isArray(parsed.books) ? parsed.books : [],
       activeId: parsed.activeId ?? null,
@@ -16,18 +16,16 @@ function load() {
     return { books: [], activeId: null };
   }
 }
-function save(state) {
-  try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {}
-}
+function save(state) { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {} }
 
 export default function useLibrary() {
   const [books, setBooks] = useState(() => load().books);
   const [activeId, setActiveId] = useState(() => load().activeId);
 
-  // Carregar 1x
+  // carregar 1x
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
+      const raw = localStorage.getItem(KEY); // <-- KEY (corrigido)
       if (raw) {
         const { books: b = [], activeId: a = null } = JSON.parse(raw);
         setBooks(b);
@@ -50,7 +48,7 @@ export default function useLibrary() {
       author: author?.trim() || "",
       pagesTotal: Number(pagesTotal) || 0,
       pagesRead: 0,
-      cover: cover || null, // string dataURL
+      cover: cover || null,
       createdAt: Date.now(),
     };
     setBooks(prev => [...prev, book]);
@@ -59,31 +57,29 @@ export default function useLibrary() {
   }
 
   function updateBook(id, patch) {
-    setBooks(prev =>
-      prev.map(b => (b.id === id ? { ...b, ...patch } : b))
-    );
+    setBooks(prev => prev.map(b => (b.id === id ? { ...b, ...patch } : b)));
   }
-  return { books, activeId, setActiveId, addBook, updateBook };
 
   function removeBook(id) {
     setBooks(prev => prev.filter(b => b.id !== id));
-    // se removi o ativo, escolhe outro
     setActiveId(prev => (prev === id ? (books[0]?.id ?? null) : prev));
   }
 
   const current = useMemo(
-    () => books.find((b) => b.id === activeId) || books[0] || null,
+    () => books.find(b => b.id === activeId) || books[0] || null,
     [books, activeId]
   );
+  const activeBook = current; // alias
 
   return {
     books,
     current,
+    activeBook,
     activeId,
     setActiveId,
     addBook,
     updateBook,
     removeBook,
-    setBooks,         // << vamos usar no sync com o Drive
+    setBooks,
   };
 }
