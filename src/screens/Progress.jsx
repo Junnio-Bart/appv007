@@ -3,7 +3,7 @@ import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import useLibrary from "../hooks/useLibrary";
 import s from "./Progress.module.css";
-
+import CycleSettingsModal from "../components/CycleSettingsModal";
 
 function fmtMin(n){ n = Math.max(0, Math.floor(n||0)); return (n<10 ? "0" : "") + n + " min"; }
 
@@ -36,6 +36,19 @@ export default function Progress(){
   const pagesTotal = Number(activeBook.pagesTotal ?? activeBook.pages ?? 0);
   const pagesRead  = Number(activeBook.pagesRead  ?? 0);
 
+  const [cycleOpen, setCycleOpen] = useState(false);
+  const openCycle  = () => setCycleOpen(true);
+  const closeCycle = () => setCycleOpen(false);
+
+  // chamado pelo modal a cada mudança de valor
+  const handleCycleChange = (newPpm, newInterval) => {
+    if (lib?.setPpm) lib.setPpm(newPpm);
+    else if (lib?.setState) lib.setState(s => ({ ...s, ppm: newPpm }));
+
+    if (lib?.setInterval) lib.setInterval(newInterval);
+    else if (lib?.setState) lib.setState(s => ({ ...s, interval: newInterval }));
+  };
+  
   // --- cálculos topo/rodapé (agora usando pagesToday) ---
   const pagesToday = lib?.state?.progressDraft?.pagesToday ?? 0;
 
@@ -88,9 +101,6 @@ useEffect(() => {
         {title}
         <span className={s.caret} aria-hidden>▾</span>
       </button>
-
-        
-
         <div
           id="bookMenu"
           ref={menuRef}
@@ -137,23 +147,31 @@ useEffect(() => {
           <span className={s.kpiLabel}>Tempo estimado</span>
         </div>
 
-        <div className={s.stat}>
+        <button 
+          type="button" 
+          className={`${s.stat} ${s.statBtn}`}
+          onClick={openCycle} 
+          title="Ajustar páginas e minutos por ciclo"
+        >
           <strong className={s.kpi}>{ppm}</strong>
           <span className={s.kpiLabel}>Pág / ciclo</span>
-        </div>
+        </button>
       </div>
 
-      {/* grade de ciclos (placeholder visual) */}
+      {/* grade de ciclos (agora usa ppm e abre o modal pelo tempo) */}
       <div className={s.grid}>
-        {[...Array(9)].map((_,i)=>(
+      {[...Array(9)].map((_, i) => (
           <div key={i} className={s.row}>
-            <div className={s.rowIdx}>{i+1}</div>
+            <div className={s.rowIdx}>{i + 1}</div>
+
             <div className={s.blocks}>
-              {[...Array(10)].map((_,j)=>(
+            {[...Array(Math.max(0, Number(ppm) || 0))].map((_, j) => (
                 <span key={j} className={s.block} />
               ))}
             </div>
-            <div className={s.rowTime}>{interval}m</div>
+            <div className={s.rowTime}>
+            <button type="button" className={s.timeBtn} onClick={openCycle}>{interval}m</button>
+            </div>
           </div>
         ))}
       </div>
@@ -162,30 +180,14 @@ useEffect(() => {
         <span className={s.bottomLabel}>Restantes</span>
         <strong className={s.bottomValue}>{restantes}</strong>
       </div>
-      {/* ação mínima para navegar de volta (até ligarmos os botões reais) */}
-      <div className={s.actions}>
-        <button className="btn-secondary" onClick={() => nav("/")}>Voltar para Biblioteca</button>
-      </div>
+      <CycleSettingsModal
+        open={cycleOpen}
+        initialPpm={ppm}
+        initialInterval={interval}
+        onClose={closeCycle}                // <— aqui!
+        onChange={handleCycleChange}
+        onDiscoverPPM={() => { setCycleOpen(false); nav("/ppm"); }}
+      />
     </section>
-    
   );
-  useEffect(() => {
-    const close = (e) => {
-      // fecha se clicar fora do pill/menu ou pressionar ESC
-      if (e.type === "keydown" && e.key !== "Escape") return;
-      if (e.type === "click") {
-        const pill = document.querySelector(`.${s.titlePill}`);
-        const menu = document.querySelector(`#bookMenu`);
-        if (pill?.contains(e.target) || menu?.contains(e.target)) return;
-      }
-      document.body.classList.remove("show-book-menu");
-    };
-    document.addEventListener("click", close);
-    document.addEventListener("keydown", close);
-    return () => {
-      document.removeEventListener("click", close);
-      document.removeEventListener("keydown", close);
-    };
-  }, []);
-  
 }

@@ -30,33 +30,36 @@ export default function EditPagesModal({ open, onClose, book, onSave }) {
         <form className={s.form} onSubmit={submit}>
           <div className={s.grid}>
             <label className={s.box}>
-              <span className={s.label}>Lidas</span>
-              <input
-                type="number"
-                inputMode="numeric"
-                min="0"
-                max={total || undefined}
-                value={read}
-                onChange={(e) => setRead(e.target.value)}
-              />
+            
+              <div className={s.inputBox}>
+                <input
+                  className={s.input}
+                  type="number"
+                  inputMode="numeric"
+                  min="0"
+                  max={total || undefined}
+                  value={read}
+                  onChange={(e) => setRead(Math.max(0, Number(e.target.value) || 0))}
+                />
+              </div>
+              <span className={s.label}>Pág lidas</span>
             </label>
 
             <label className={s.box}>
-              <span className={s.label}>Totais</span>
-              <input
-                type="number"
-                inputMode="numeric"
-                min="0"
-                value={total}
-                onChange={(e) => setTotal(e.target.value)}
-              />
+              <div className={s.inputBox}>
+                <input
+                  className={s.input}
+                  type="number"
+                  inputMode="numeric"
+                  min="0"
+                  value={total}
+                  onChange={(e) => setTotal(Math.max(0, Number(e.target.value) || 0))}
+                />
+              </div>
+              <span className={s.label}>Pág totais</span>
             </label>
           </div>
-
-          <div className={`${s.progress} ${s[band]}`}>
-            {Math.min(read, total)} / {total || 0}
-          </div>
-
+          
           <div className={s.actions}>
             <button type="button" className={s.btnGhost} onClick={onClose}>
               Cancelar
