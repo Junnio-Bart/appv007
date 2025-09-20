@@ -6,6 +6,21 @@ import EditPagesModal from "../components/EditPagesModal.jsx";
 import ModalMount from "../components/ModalMount.jsx";
 import s from "./Library.module.css";
 
+// ==== helpers de reidratação (mesmos do Progress) ====
+const makeKey = (book) => `book-settings:${book?.id || book?.title || "unknown"}`;
+const loadBookSettings = (book) => {
+  try { const raw = localStorage.getItem(makeKey(book)); return raw ? JSON.parse(raw) : null; }
+  catch { return null; }
+};
+const saveBookSettings = (book, patch) => {
+  try {
+    const k = makeKey(book);
+    const cur = loadBookSettings(book) || {};
+    localStorage.setItem(k, JSON.stringify({ ...cur, ...patch }));
+  } catch {}
+};
+const num = (v, d=0) => (Number.isFinite(Number(v)) ? Number(v) : d);
+
 // helpers fora do componente (não são hooks)
 function cssNum(varName, fallback = 0) {
   const v = getComputedStyle(document.documentElement).getPropertyValue(varName);
@@ -19,13 +34,27 @@ function clientXof(e) {
 export default function Library({ onGoProgress }) {
   const { books, activeId, setActiveId, addBook, updateBook } = useLibrary();
 
+  // mescla valores persistidos (total/lidas) para refletir o que foi editado na barra preta
+  const rawBooks   = Array.isArray(books) ? books : [];
+  const booksView  = useMemo(() => rawBooks.map(b => {
+    const saved = loadBookSettings(b) || {};
+    const total = Number.isFinite(saved.pagesTotal)
+      ? saved.pagesTotal
+      : num(b.pagesTotal ?? b.pages, 0);
+    const read  = Math.min(total,
+      Number.isFinite(saved.pagesRead) ? saved.pagesRead : num(b.pagesRead, 0)
+    );
+    // mantém compat: algumas UIs usam b.pages como total
+    return { ...b, pagesTotal: total, pages: total, pagesRead: read };
+  }), [rawBooks]);
+
+
   // -------- estado local --------
   const [showNewBook, setShowNewBook] = useState(false);
   const [showPages, setShowPages] = useState(false);
 
   // fila real: livros + card “novo” no fim
-  const items = useMemo(() => [...books, { id: "__NEW__", isNew: true }], [books]);
-
+  const items = useMemo(() => [...booksView, { id: "__NEW__", isNew: true }], [booksView]);
   // índice atual baseado no activeId
   const [index, setIndex] = useState(() => {
     const i = items.findIndex((it) => it.id === activeId);
@@ -290,9 +319,12 @@ export default function Library({ onGoProgress }) {
           onSave={({ pagesRead, pagesTotal }) => {
             if (updateBook && current && !current.isNew) {
               updateBook(current.id, { pagesRead, pagesTotal });
+              // persiste para manter alinhado com a barra preta
+              saveBookSettings(current, { pagesRead, pagesTotal });
             }
             setShowPages(false);
           }}
+          
         />
       </ModalMount>
     </section>
