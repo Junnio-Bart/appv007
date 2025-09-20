@@ -1,102 +1,69 @@
-// src/components/CycleSettingsModal.jsx
 import { useEffect, useState } from "react";
 import s from "./CycleSettingsModal.module.css";
 import ModalMount from "./ModalMount.jsx";
 
 export default function CycleSettingsModal({
   open,
-  initialPpm = 6,
-  initialInterval = 5,
-  onClose,          // fecha no overlay / ESC
-  onChange,         // chamado a cada edição (ppm, interval)
-  onDiscoverPPM,
+  initialPpc = 10,          // páginas por ciclo
+  initialInterval = 5,      // minutos por ciclo
+  maxPpc = 999,             // LIMITE: nunca maior que a meta do dia
+  onSave,                   // (ppc, interval)
+  onClose,
 }) {
-  const [ppm, setPpm] = useState(initialPpm);
+  const [ppc, setPpc] = useState(initialPpc);
   const [interval, setInterval] = useState(initialInterval);
 
-  // hidrata quando abre
   useEffect(() => {
-    if (!open) return;
-    setPpm(initialPpm);
-    setInterval(initialInterval);
-  }, [open, initialPpm, initialInterval]);
+    if (open) { setPpc(initialPpc); setInterval(initialInterval); }
+  }, [open, initialPpc, initialInterval]);
 
-  // ESC fecha
   useEffect(() => {
     if (!open) return;
-    const onKey = (e) => e.key === "Escape" && onClose?.();
+    const onKey = (e) => {
+      if (e.key === "Escape") onClose?.();
+      if (e.key === "Enter")  onSave?.(ppc, interval);
+    };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
-
-  const sanitizeInt = (v) => Math.max(1, Math.min(240, Math.floor(Number(v) || 0)));
-  const sanitizePpm = (v) => Math.max(0, Math.min(999, Math.floor(Number(v) || 0)));
-
-  // commit imediato no pai
-  const changeInterval = (v) => {
-    const n = sanitizeInt(v);
-    setInterval(n);
-    onChange?.(ppm, n);
-  };
-  const changePpm = (v) => {
-    const n = sanitizePpm(v);
-    setPpm(n);
-    onChange?.(n, interval);
-  };
+  }, [open, ppc, interval, onSave, onClose]);
 
   if (!open) return null;
 
+  const capPpc = (v) => Math.max(1, Math.min(Math.floor(Number(v)||0), Math.max(1, Number(maxPpc)||1)));
+  const capInt = (v) => Math.max(1, Math.min(Math.floor(Number(v)||0), 240));
+
   return (
     <ModalMount>
-      {/* clique fora fecha */}
-      <div className={s.overlay} onMouseDown={onClose} onClick={onClose} />
-
-      {/* clique dentro NÃO fecha */}
-      <div
-        className={s.sheet}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="cycleTitle"
-        onMouseDown={(e) => e.stopPropagation()}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h3 id="cycleTitle" className={s.sheetTitle}>Páginas por ciclo</h3>
+      <div className={s.overlay} onPointerDown={(e)=>{ if (e.target === e.currentTarget) onClose?.(); }} />
+      <div className={s.sheet} role="dialog" aria-modal="true" aria-labelledby="cycleTitle" onPointerDown={(e)=>e.stopPropagation()}>
+        <h3 id="cycleTitle" className={s.sheetTitle}>Ciclo de leitura</h3>
 
         <div className={s.dual}>
           <div className={s.field}>
+            <label className={s.label}>Ciclo (min)</label>
             <div className={s.inputBox}>
-              <input
-                className={s.input}
-                type="number" inputMode="numeric" min="1" max="240" step="1"
-                value={interval}
-                onChange={(e) => changeInterval(e.target.value)}
-              />
+              <input className={s.input} type="number" inputMode="numeric" min="1" max="240" step="1"
+                value={interval} onChange={(e)=> setInterval(capInt(e.target.value))}/>
               <span className={s.unit}>min</span>
             </div>
-            <small>ciclo (min)</small>
+            <small>Duração de cada ciclo</small>
           </div>
 
           <div className={s.field}>
+            <label className={s.label}>Páginas por ciclo</label>
             <div className={s.inputBox}>
-              <input
-                className={s.input}
-                type="number" inputMode="numeric" min="0" max="999" step="1"
-                value={ppm}
-                onChange={(e) => changePpm(e.target.value)}
-              />
+              <input className={s.input} type="number" inputMode="numeric" min="1" step="1"
+                value={ppc} onChange={(e)=> setPpc(capPpc(e.target.value))}/>
               <span className={s.unit}>pág</span>
             </div>
-            <small>pág por ciclo</small>
+            <small>Máximo permitido: {maxPpc}</small>
           </div>
         </div>
 
-        <button
-          type="button"
-          className={s.ppmBtn}
-          onClick={() => { onClose?.(); onDiscoverPPM?.(); }}
-        >
-          Descobrir meu PPM
-        </button>
+        <div className={s.footer}>
+          <button type="button" className={s.btnGhost} onClick={onClose}>Cancelar</button>
+          <button type="button" className={s.btnPrimary} onClick={()=> onSave?.(capPpc(ppc), capInt(interval))}>Salvar</button>
+        </div>
       </div>
     </ModalMount>
   );

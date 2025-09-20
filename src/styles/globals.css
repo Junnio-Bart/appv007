@@ -67,7 +67,7 @@ p { font-size: var(--fs-body); color: var(--muted); margin:0 }
 }
 .logo-btn img{
   display:block;
-  width: 132px;      /* ajuste o tamanho que quiser */
+  width: 140px;      /* ajuste o tamanho que quiser */
   height: clamp(28px, 7vw, 72px);
 }
 .logo-btn:focus-visible{

@@ -29,7 +29,10 @@
   display:grid; 
   justify-items:center; 
   row-gap:8px; 
-  margin-bottom:10px; }
+  margin-bottom:10px; 
+  position: relative; 
+  z-index: 1001;
+}
 
 .titleWrap{ position:relative; 
   display:grid; 
@@ -44,7 +47,7 @@
   background: #0b1a2a;
   border: 1px solid #1e293b;
   font-weight: 800;
-  font-size: 16px;
+  font-size: 20px;
   color: #e6f2ec;
   display: inline-flex;                    /* centraliza o texto */
   align-items: center;
@@ -52,6 +55,7 @@
   width: auto;
   transition: min-width .28s ease, padding .28s ease, box-shadow .28s ease;
   box-shadow: 0 10px 28px rgba(0,0,0,.25);
+  
 }
 .titlePill.open{
   min-width: 280px;                        /* “expande” quando abre */
@@ -77,8 +81,13 @@
 .badgeReading,
 .badgeDone{
   margin-top:4px;
-  padding:6px 10px; border-radius:10px; font-weight:700; font-size:12px;
-  border:1px solid #1e293b; background:#0b1220; color:#cbd5e1;
+  padding:6px 10px; 
+  border-radius:10px; 
+  font-weight:700; 
+  font-size:14px;
+  border:1px solid #1e293b; 
+  background:#0b1220; 
+  color:#cbd5e1;
 }
 .badgeDone{ background:#12311f; border-color:#1f4730; color:#a8f5bf; }
 
@@ -99,7 +108,7 @@
   padding: 6px;
   min-width: 260px;
   max-width: 90vw;
-  z-index: 5;
+  z-index: 5000;
   transition: transform .18s ease, opacity .18s ease;
 }
 
@@ -126,6 +135,7 @@
   border: none;
   color: #e6f2ec;
   text-align: left;
+  
 }
 .menuItem:hover{ background: #0e2238; }
   
@@ -158,28 +168,90 @@
 
 
 /* === GRID === */
-.grid{ 
-  background:#0b1a2a; 
-  border:1px solid #1e293b; 
-  border-radius:16px; 
-  padding:14px; 
-  
+
+/* vars (com fallback) como no Mark01 */
+:root{
+  --grid-bg:     #0b1220;
+  --cell:        #1f2937;
+  --cell-border: #111927;
+  --cell-done:   #12311f;
 }
 
-.row{ 
-  display:grid; 
-  grid-template-columns: 24px 1fr 36px; 
-  align-items:center; 
-  gap:8px; 
-  margin:6px 0; }
+.grid{
+  background:#0b1a2a;
+  border:1px solid #1e293b;
+  border-radius:16px;
+  padding:12px;
+  display:grid;
+  gap:6px;
+  overflow:hidden;               /* evita “vazar” cantos */
+}
 
+.row{
+  display:grid;
+  grid-template-columns: 70px 1fr 70px;
+  align-items:center;
+  gap:6px;
+  margin:6px 0;
+}
+
+/* “índice do ciclo” com a mesma carinha do Mark01 (.cycle) */
 .rowIdx{
-  width:24px; height:24px; display:grid; place-items:center; border-radius:8px;
-  background:#0e1826; border:1px solid #1e293b; font-size:12px;
+  background: #0b1220;
+  border: 1px solid #1f2937;
+  padding: 6px 4px;
+  border-radius: 8px;
+  font-weight: 700;
+  text-align: center;
 }
-.blocks{ display:grid; grid-template-columns: repeat(10, 1fr); gap:6px; }
-.block{ height:16px; border-radius:6px; background:#0e1826; border:1px solid #1e293b; }
-.rowTime{ color:#eab308; font-weight:700; }
+
+/* contêiner dos quadradinhos: inline-grid em fluxo de coluna, com gap curto */
+.blocks{
+  display: inline-grid;
+  grid-auto-flow: column; 
+  gap: 4px;
+  overflow:hidden;
+  width:100%;
+}
+
+/* quadradinho: 24x24, arredondado, borda e cores do Mark01 */
+.block{
+  width: 24px;
+  height: 24px; 
+  border-radius: 6px;
+  background: var(--cell);
+  border:1px solid #1f2937;
+}
+
+/* quadradinho “pintado” (página lida hoje) */
+.blockDone{
+  background:#12311f;
+  border-color:#1f4730;
+  box-shadow: inset 0 0 0 1px rgba(168,245,191,.25);
+}
+
+/* tempo à direita (mesmo estilo da .time do Mark01) */
+.rowTime{
+  background:#0b1220;
+  border:1px solid #1f2937;
+  border-radius:8px;
+  padding:6px 4px;
+  font-weight:700;
+  text-align:center;
+  color:#fde68a;
+}
+
+/* botão interno do tempo sem resetar o estilo */
+.timeBtn{
+  appearance:none;
+  background:transparent;
+  border:none;
+  padding:0;
+  margin:0;
+  font:inherit;
+  color:inherit;
+  cursor:pointer;
+}
 
 /* === TODAY === */
 .today{ text-align:center; margin:14px 0 6px; }
@@ -205,41 +277,7 @@
   /* nada de background/borda aqui; só espaçamento */
   padding: 10px 15px 16px;
 }
-/* === Barra de 3 mostradores (retângulo preto) === */
-.statsBar{
-  background:#000000;
-  border:1px solid #000000;
-  border-radius:8px;
-  padding:14px;
-  display:grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap:10px;
-  margin:18px 0 16px;
-  box-shadow:0 10px 28px rgba(0,0,0,.25);
-}
-.stat{ text-align:center; display:grid; gap:4px; }
 
-/* botão “fantasma” dentro da barra preta */
-.statBtn{
-  appearance: none;
-  background: transparent;
-  border: none;
-  padding: 0;
-  margin: 0;
-  color: inherit;
-  font: inherit;
-  text-align: center;
-  cursor: pointer;
-  border-radius: 12px;
-}
-
-/* feedback */
-.statBtn:hover .kpi{ filter: brightness(1.1); transform: translateY(-2px); }
-.statBtn .kpi{ transition: .15s ease; }
-.statBtn:focus-visible{
-  outline: 2px solid rgba(125, 211, 252, .6);
-  outline-offset: 2px;
-}
 
 .kpi{
   font-size:24px; font-weight:800; color:#4ac092; line-height:1;
@@ -250,3 +288,234 @@
 .bottomStat{ text-align:center; margin:14px 0 6px; }
 .bottomLabel{ display:block; font-size:12px; opacity:.85; margin-bottom:4px; }
 .bottomValue{ font-size:28px; font-weight:800; color:#4ac092; }
+
+.btn{
+  appearance:none;
+  background:#0b1a2a;
+  border:1px solid #1e293b;
+  color:#e6f2ec;
+  border-radius:10px;
+  padding:8px 12px;
+  font-weight:700;
+  cursor:pointer;
+}
+.btn:hover{ filter:brightness(1.1); transform:translateY(-1px); }
+.actions{ display:flex; gap:10px; justify-content:center; margin-top:12px; }
+
+/* só pra garantir consistência do KPI */
+.kpi{ font-size: 22px; font-weight: 800; display:block;line-height:1; }
+.kpiLabel{ opacity: .9; font-size: 12px; display:block; margin-top:2px}
+
+/* ===== BARRA PRETA — KNOBS com toggle ===== */
+.knobBoard{
+  position:relative;
+  background:#000;
+  border:1px solid #000;
+  border-radius:12px;
+  padding:24px 24px 24px;
+  box-shadow:0 10px 28px rgba(0,0,0,.25);
+  margin:18px 0 8px;
+  z-index: 2000;
+  isolation: isolate; 
+}
+
+/* === Grip do cantinho alinhado ao raio === */
+/* raio e parâmetros do grip (opcional: ajuste aqui) */
+.knobBoard{
+  --r: 12px;         /* = border-radius do card */
+  --g-angle: 145deg;  /* ângulo das listras (mac-style) */
+  --g-c1: 14px;      /* comprimento da linha maior */
+  --g-c2: 8px;       /* comprimento da linha menor */
+  --g-th: 2px;       /* espessura das linhas */
+  --g-col: #556477;  /* cor das linhas */
+  --g-inset-x: 15px;  /* >>> empurra pra dentro só na horizontal */
+  --g-inset-y: 1px;
+}
+
+/* HIT-AREA já grande (mantém) */
+.cornerToggle{
+  position:absolute; right:1px; bottom:1px;
+  width:30px; height:30px;
+  background:transparent; cursor:pointer; z-index:7000;
+  border:0;
+}
+
+/* ===== ÍCONE (duas linhas) – com variáveis para ajustar tudo ===== */
+.cornerIcon{
+  position:absolute; right:6px; bottom:6px;
+  width:18px; height:18px; pointer-events:none;
+
+  /* ------- AJUSTES RÁPIDOS (mude aqui) ------- */
+  /* ângulo das linhas */
+  --deg: -45deg;
+
+  /* linha A (a “de dentro”) */
+  --a-w: 16px;          /* comprimento */
+  --a-tx: 10px;          /* deslocamento X */
+  --a-ty: 5px;          /* deslocamento Y */
+  --a-th: 2px;          /* espessura */
+  --a-color: #cbd5e1;   /* cor */
+  --a-op: 0.95;         /* opacidade */
+
+  /* linha B (a “de fora”) */
+  --b-w: 10px;
+  --b-tx: 7px;
+  --b-ty: 9px;
+  --b-th: 2px;
+  --b-color: #cbd5e1;
+  --b-op: 0.85;
+}
+
+.cornerIcon::before,
+.cornerIcon::after{
+  content:"";
+  position:absolute; right:0; bottom:0;
+  transform-origin: right bottom;
+  border-radius:2px;
+}
+
+/* linha A */
+.cornerIcon::after{
+  width: var(--a-w);
+  height: var(--a-th);
+  background: var(--a-color);
+  opacity: var(--a-op);
+  transform: rotate(var(--deg)) translate(var(--a-tx), var(--a-ty));
+  right:8px; bottom:6px;
+}
+
+/* linha B */
+.cornerIcon::before{
+  width: var(--b-w);
+  height: var(--b-th);
+  background: var(--b-color);
+  opacity: var(--b-op);
+  transform: rotate(var(--deg)) translate(var(--b-tx), var(--b-ty));
+  right:7px; bottom:5px;
+}
+
+/* feedback opcional */
+.cornerToggle:hover .cornerIcon::before,
+.cornerToggle:hover .cornerIcon::after{ filter: brightness(1.1); }
+
+
+/* linhas de knobs */
+.knobRow,
+.knobRowExtra{
+  display:grid;
+  grid-template-columns: repeat(3, minmax(20px, 1fr));
+  gap:10px;
+}
+
+/* responsivo: 2 e 1 por linha quando apertar */
+@media (max-width: 160px){
+  .knobRow, .knobRowExtra{ grid-template-columns: repeat(2, minmax(100px, 1fr)); }
+}
+@media (max-width: 120px){
+  .knobRow, .knobRowExtra{ grid-template-columns: 1fr; }
+}
+
+/* animação de expandir/recolher da segunda linha */
+.knobRowExtra{
+  overflow:hidden;
+  max-height:500px;                 /* estado expandido */
+  opacity:1;
+  transform: translateY(0);
+  transition:
+    max-height .28s ease,
+    opacity .2s ease,
+    transform .28s ease;
+  will-change:max-height,opacity,transform;
+}
+.isCollapsed .knobRowExtra{
+  max-height:0;                     /* recolhido */
+  opacity:0;
+  transform: translateY(-6px);
+}
+
+/* célula de knob (tipografia igual aos KPIs) */
+.knob{
+  display:grid;
+  justify-items:center;
+  align-content:start;
+  min-width:0;
+  word-wrap:break-word;
+  text-align:center;
+}
+.knobValue{
+  font-size:24px;
+  font-weight:800;
+  line-height:1.05;
+  color:#4ac092;
+}
+.knobLabel{
+  margin-top:2px;
+  font-size:12px;
+  color:#a7f3d0;
+  opacity:.9;
+}
+/* espaçamento vertical entre as linhas de knobs */
+.knobRowExtra{
+  margin-top: 20px; /* ajuste aqui: 8–20px conforme seu gosto */
+  overflow: hidden;
+  max-height: 500px;
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    max-height .28s ease,
+    opacity .2s ease,
+    transform .28s ease,
+    margin-top .28s ease;   /* anima o espaço junto */
+}
+
+.isCollapsed .knobRowExtra{
+  margin-top: 0;  /* sem “gap” quando recolhido */
+  max-height: 0;
+  opacity: 0;
+  transform: translateY(-6px);
+}
+
+/* overlay de desfoque fora da barra preta */
+.dim{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.28);
+  backdrop-filter: blur(3px);
+  z-index: 1002;                    /* menor que a barra */
+  pointer-events: auto;
+}
+.knobBoard{ position: relative; z-index: 1002; } /* barra por cima do blur */
+
+/* botão “fantasma” do knob (enquanto é só texto) */
+.kBtn{
+  appearance:none; background:transparent; border:0; padding:0; margin:0;
+  color:inherit; font:inherit; cursor:pointer;
+  display:grid; justify-items:center;
+}
+
+/* input de edição inline (branco e central) */
+.kEditInput{
+  width: 100%;
+  max-width: 6ch;
+  text-align: center;
+  background: transparent;
+  color: #ffffff;
+  border: 0;
+  outline: none;
+  font-weight: 800;
+  font-size: 24px;
+  line-height: 1.05;
+  caret-color: #6ee7b7;
+}
+.kEditInput::-webkit-outer-spin-button,
+.kEditInput::-webkit-inner-spin-button{ -webkit-appearance: none; margin: 0; }
+.kEditInput[type="number"]{ -moz-appearance: textfield; appearance: textfield; }
+
+/* pulinho */
+@keyframes kJump{ 0%{transform:translateY(0) scale(1);} 50%{transform:translateY(-3px) scale(1.04);} 100%{transform:translateY(0) scale(1);} }
+.jump{ animation:kJump .18s ease-out both; }
+
+.wrap {
+  position: relative;               /* garante stacking context local */
+  z-index: 0;
+}

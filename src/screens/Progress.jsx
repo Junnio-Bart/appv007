@@ -1,24 +1,49 @@
 // /src/screens/Progress.jsx
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import useLibrary from "../hooks/useLibrary";
 import s from "./Progress.module.css";
 import CycleSettingsModal from "../components/CycleSettingsModal";
+import GoalModal from "../components/GoalModal";
 
-function fmtMin(n){ n = Math.max(0, Math.floor(n||0)); return (n<10 ? "0" : "") + n + " min"; }
+/* ===================== Utils ===================== */
+const num   = (v, d=0) => (Number.isFinite(Number(v)) ? Number(v) : d);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const fmtMin = (n) => {
+  n = Math.max(0, Math.ceil(n || 0));
+  return (n < 10 ? "0" : "") + n + " min";
+};
+const parseIntLike = (v) => {
+  if (v === "" || v == null) return 0;
+  const n = Math.floor(Number(v));
+  return Number.isFinite(n) ? n : 0;
+};
+const parseGoal = parseIntLike;
 
+/* === persistência por livro (localStorage) === */
+const makeKey = (book) => `book-settings:${book?.id || book?.title || "unknown"}`;
+const loadBookSettings = (book) => {
+  try { const raw = localStorage.getItem(makeKey(book)); return raw ? JSON.parse(raw) : null; }
+  catch { return null; }
+};
+const saveBookSettings = (book, patch) => {
+  try {
+    const k = makeKey(book);
+    const cur = loadBookSettings(book) || {};
+    localStorage.setItem(k, JSON.stringify({ ...cur, ...patch }));
+  } catch {}
+};
+
+/* ===================== Componente ===================== */
 export default function Progress(){
   const nav = useNavigate();
   const lib = useLibrary();
 
-  // compat: pegue o livro ativo independente do nome usado no hook
+  // Livros / seleção
+  const books = Array.isArray(lib?.books) ? lib.books : [];
   const activeBook = lib?.activeBook || lib?.current || lib?.selectedBook || null;
-  const goal       = lib?.state?.goal ?? lib?.goal ?? 50;        // meta diária (fallback)
-  const ppm        = lib?.state?.ppm  ?? lib?.ppm  ?? 6;         // páginas por ciclo (fallback)
-  const interval   = lib?.state?.interval ?? lib?.interval ?? 5; // minutos por ciclo (fallback)
 
-  // === EMPTY STATE (nenhum livro selecionado) ===
-  if (!activeBook){
+  if (!activeBook) {
     return (
       <section className="section">
         <div className={s.emptyCard}>
@@ -30,163 +55,460 @@ export default function Progress(){
     );
   }
 
-  // === DADOS DO LIVRO ===
-  const id         = activeBook.id;
-  const title      = activeBook.title || "Livro";
-  const pagesTotal = Number(activeBook.pagesTotal ?? activeBook.pages ?? 0);
-  const pagesRead  = Number(activeBook.pagesRead  ?? 0);
+  /* ---------- Estado global atual ---------- */
+  const st       = lib?.state || {};
+  const goal     = num(st.goal, 50);           // meta do dia (global)
+  const ppm      = Math.max(0, num(st.ppm, 6));          // páginas / minuto (global)
+  const interval = Math.max(0, num(st.interval, 5));     // minutos / ciclo (global)
+  const pagesToday = Math.max(0, num(st.progressDraft?.pagesToday, 0));
 
-  const [cycleOpen, setCycleOpen] = useState(false);
-  const openCycle  = () => setCycleOpen(true);
-  const closeCycle = () => setCycleOpen(false);
+  /* ---------- Espelhos locais do livro (total e lidas) ---------- */
+  const initialTotal = Math.max(1, num(activeBook.pagesTotal ?? activeBook.pages, 1));
+  const initialRead  = Math.max(0, num(activeBook.pagesRead, 0));
+  const [localTotal, setLocalTotal] = useState(initialTotal);
+  const [localRead,  setLocalRead]  = useState(initialRead);
+  useEffect(() => { setLocalTotal(initialTotal); setLocalRead(initialRead); }, [initialTotal, initialRead]);
 
-  // chamado pelo modal a cada mudança de valor
-  const handleCycleChange = (newPpm, newInterval) => {
-    if (lib?.setPpm) lib.setPpm(newPpm);
-    else if (lib?.setState) lib.setState(s => ({ ...s, ppm: newPpm }));
+  /* ---------- Meta local (capada ao restante do livro) ---------- */
+  const restantesLivro = Math.max(0, localTotal - localRead);
+  const initialGoal = clamp(goal, 0, restantesLivro);
+  const [localGoal, setLocalGoal] = useState(initialGoal);
+  useEffect(() => { setLocalGoal(initialGoal); }, [initialGoal]);
 
-    if (lib?.setInterval) lib.setInterval(newInterval);
-    else if (lib?.setState) lib.setState(s => ({ ...s, interval: newInterval }));
-  };
-  
-  // --- cálculos topo/rodapé (agora usando pagesToday) ---
-  const pagesToday = lib?.state?.progressDraft?.pagesToday ?? 0;
+  /* ---------- Ciclo (ppc/min) – espelhos locais ---------- */
+  const initialInterval = Math.max(0, interval);
+  const initialPpc      = Math.max(0, Math.floor(ppm * initialInterval));
+  const [localInterval, setLocalInterval] = useState(initialInterval);
+  const [localPpc,      setLocalPpc]      = useState(initialPpc);
+  useEffect(() => { setLocalInterval(initialInterval); }, [initialInterval]);
+  useEffect(() => { setLocalPpc(initialPpc);           }, [initialPpc]);
+  // Se a meta diminuir, garanta ppc <= meta
+  useEffect(() => { setLocalPpc(prev => Math.min(prev, Math.max(0, localGoal || 0))); }, [localGoal]);
 
-  const total = Math.max(1, pagesTotal);
-  const pct   = Math.floor(((pagesRead + pagesToday) / total) * 100);
+  /* ---------- Derivados ---------- */
+  const effPpm    = localInterval > 0 ? (localPpc / localInterval) : 0;
+  const ppcEff    = Math.max(0, Math.min(localPpc, localGoal || localPpc));
+  const faltaHoje = Math.max(0, localGoal - Math.min(pagesToday, localGoal));
+  const estMin    = (faltaHoje > 0 && effPpm > 0) ? Math.ceil(faltaHoje / effPpm) : 0;
+  const pctGeral  = Math.min(100, Math.floor(((localRead + Math.min(pagesToday, localGoal)) / localTotal) * 100));
+  const lidasGerais = Math.min(localTotal, localRead + Math.min(pagesToday, localGoal));
 
-  // estimativa p/ terminar a meta do dia
-  const faltaHoje = Math.max(0, Number(goal) - pagesToday);
-  const ciclos    = ppm ? Math.ceil(faltaHoje / ppm) : 0;
-  const estMin    = ciclos * Math.max(1, Number(interval));
+  /* ---------- Hidratar do localStorage quando trocar de livro ---------- */
+  useEffect(() => {
+    const saved = loadBookSettings(activeBook);
+    if (!saved) return;
 
-  // restantes do LIVRO (contando o que já leu + o que marcou hoje)
-  const restantes = Math.max(0, total - (pagesRead + pagesToday));
+    const savedGoal     = Number.isFinite(saved.goal)     ? saved.goal     : undefined;
+    const savedInterval = Number.isFinite(saved.interval) ? saved.interval : undefined;
+    const savedPpm      = Number.isFinite(saved.ppm)      ? saved.ppm      : undefined;
+    const savedTotal    = Number.isFinite(saved.pagesTotal) ? saved.pagesTotal : undefined;
+    const savedRead     = Number.isFinite(saved.pagesRead)  ? saved.pagesRead  : undefined;
 
+    // aplica clamps seguros com base no livro atual
+    const capTotal    = Math.max(1, num(savedTotal, initialTotal));
+    const capRead     = Math.max(0, Math.min(num(savedRead, initialRead), capTotal));
+    const capGoal     = clamp(num(savedGoal, goal), 0, Math.max(0, capTotal - capRead));
+    const capInterval = Math.max(0, num(savedInterval, interval));
+    const capPpm      = Math.max(0, num(savedPpm, ppm));
+
+    // UI imediata
+    setLocalTotal(capTotal);
+    setLocalRead(capRead);
+    setLocalGoal(capGoal);
+    setLocalInterval(capInterval);
+    setLocalPpc(Math.max(0, Math.floor(capPpm * capInterval)));
+
+    // provider (compat)
+    lib?.setState?.(s0 => ({
+      ...s0,
+      goal: capGoal,
+      ppm: capPpm,
+      interval: capInterval,
+      state: { ...(s0.state || {}), goal: capGoal, ppm: capPpm, interval: capInterval }
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeBook?.id]);
+
+  /* ---------- Dropdown do título ---------- */
   const [menuOpen, setMenuOpen] = useState(false);
-  const pillRef = useRef(null);
-  const menuRef = useRef(null);
+  const pillRef = useRef(null); const menuRef = useRef(null);
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onClick = (e) => {
+      if (pillRef.current?.contains(e.target)) return;
+      if (menuRef.current?.contains(e.target)) return;
+      setMenuOpen(false);
+    };
+    const onKey = (e) => { if (e.key === "Escape") setMenuOpen(false); };
+    document.addEventListener("click", onClick);
+    document.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("click", onClick); document.removeEventListener("keydown", onKey); };
+  }, [menuOpen]);
 
-// fecha ao clicar fora ou apertar ESC
-useEffect(() => {
-  if (!menuOpen) return;
-  const onClick = (e) => {
-    if (pillRef.current?.contains(e.target)) return;
-    if (menuRef.current?.contains(e.target)) return;
-    setMenuOpen(false);
+  /* ---------- Edição inline / overlay ---------- */
+  const [editing, setEditing]   = useState(null);     // 'goal' | 'ppc' | 'interval' | 'bookTotal' | 'bookRead' | null
+  useEffect(() => { setEditing(null); }, []);         // evita ficar "preso" editando em HMR
+
+  // drafts + animação "pulinho"
+  const [goalDraft, setGoalDraft]       = useState("");
+  const [goalJump,  setGoalJump]        = useState(false);
+  const [ppcDraft,  setPpcDraft]        = useState("");
+  const [ppcJump,   setPpcJump]         = useState(false);
+  const [intDraft,  setIntDraft]        = useState("");
+  const [intJump,   setIntJump]         = useState(false);
+  const [bookTotalDraft, setBookTotalDraft] = useState("");
+  const [bookReadDraft,  setBookReadDraft]  = useState("");
+  const [bookTotalJump,  setBookTotalJump]  = useState(false);
+  const [bookReadJump,   setBookReadJump]   = useState(false);
+
+  // abrir edições
+  const startEditGoal = () => { setGoalDraft(String(localGoal ?? 0)); setEditing("goal"); setGoalJump(true); setTimeout(()=>setGoalJump(false),180); };
+  const startEditPpc  = () => { setPpcDraft(String(localPpc ?? 0));   setEditing("ppc");  setPpcJump(true);  setTimeout(()=>setPpcJump(false),180); };
+  const startEditInterval = () => { setIntDraft(String(localInterval ?? 0)); setEditing("interval"); setIntJump(true); setTimeout(()=>setIntJump(false),180); };
+  const startEditBookTotal= () => { setBookTotalDraft(String(localTotal ?? 0)); setEditing("bookTotal"); setBookTotalJump(true); setTimeout(()=>setBookTotalJump(false),180); };
+  const startEditBookRead = () => { setBookReadDraft(String(localRead ?? 0));  setEditing("bookRead");  setBookReadJump(true);  setTimeout(()=>setBookReadJump(false),180); };
+
+  // commits
+  const commitGoal = () => {
+    const wanted = parseGoal(goalDraft);
+    const final  = clamp(wanted, 0, restantesLivro);
+    setLocalGoal(final);
+    lib?.setState?.(s0 => ({ ...s0, goal: final, state: { ...(s0.state || {}), goal: final } }));
+    saveBookSettings(activeBook, { goal: final });
+    setEditing(null);
   };
-  const onKey = (e) => { if (e.key === "Escape") setMenuOpen(false); };
-
-  document.addEventListener("click", onClick);
-  document.addEventListener("keydown", onKey);
-  return () => {
-    document.removeEventListener("click", onClick);
-    document.removeEventListener("keydown", onKey);
+  const commitPpc = () => {
+    const wanted   = parseIntLike(ppcDraft);
+    const finalPpc = clamp(wanted, 0, Math.max(0, localGoal || 0));
+    setLocalPpc(finalPpc);
+    const nextPPM  = (localInterval > 0) ? (finalPpc / localInterval) : 0;
+    lib?.setState?.(s0 => ({ ...s0, ppm: nextPPM, interval: localInterval, state: { ...(s0.state||{}), ppm: nextPPM, interval: localInterval } }));
+    saveBookSettings(activeBook, { ppm: nextPPM, interval: localInterval });
+    setEditing(null);
   };
-}, [menuOpen]);
+  const commitInterval = () => {
+    const wantedInt  = Math.max(0, parseIntLike(intDraft));
+    setLocalInterval(wantedInt);
+    const nextPPM    = (wantedInt > 0) ? (localPpc / wantedInt) : 0;
+    lib?.setState?.(s0 => ({ ...s0, ppm: nextPPM, interval: wantedInt, state: { ...(s0.state||{}), ppm: nextPPM, interval: wantedInt } }));
+    saveBookSettings(activeBook, { ppm: nextPPM, interval: wantedInt });
+    setEditing(null);
+  };
+  const commitBookTotal = () => {
+    const wantedTotal = Math.max(0, parseIntLike(bookTotalDraft));
+    const finalTotal  = Math.max(1, wantedTotal);
+    setLocalTotal(finalTotal);
+    if (localRead > finalTotal) setLocalRead(finalTotal);
+    lib?.setState?.(s0 => {
+      const books = Array.isArray(s0?.books)
+        ? s0.books.map(b => b.id === activeBook.id
+            ? { ...b, pagesTotal: finalTotal, pages: finalTotal, pagesRead: Math.min(num(b.pagesRead, 0), finalTotal) }
+            : b)
+        : s0?.books;
+      const ab = s0?.activeBook && s0.activeBook.id === activeBook.id
+        ? { ...s0.activeBook, pagesTotal: finalTotal, pages: finalTotal, pagesRead: Math.min(num(s0.activeBook.pagesRead, 0), finalTotal) }
+        : s0?.activeBook;
+      return { ...s0, books, activeBook: ab };
+    });
+    saveBookSettings(activeBook, { pagesTotal: finalTotal });
+    setEditing(null);
+  };
+  const commitBookRead = () => {
+    const wantedRead = Math.max(0, parseIntLike(bookReadDraft));
+    const finalRead  = Math.min(Math.max(0, wantedRead), localTotal);
+    setLocalRead(finalRead);
+    lib?.setState?.(s0 => {
+      const books = Array.isArray(s0?.books)
+        ? s0.books.map(b => b.id === activeBook.id ? { ...b, pagesRead: finalRead } : b)
+        : s0?.books;
+      const ab = s0?.activeBook && s0.activeBook.id === activeBook.id
+        ? { ...s0.activeBook, pagesRead: finalRead }
+        : s0?.activeBook;
+      return { ...s0, books, activeBook: ab };
+    });
+    saveBookSettings(activeBook, { pagesRead: finalRead });
+    setEditing(null);
+  };
 
+  // atalhos de teclado
+  useEffect(() => {
+    if (!editing) return;
+    const onKey = (e) => {
+      if (e.key === "Enter") {
+        if (editing === "goal")      commitGoal();
+        if (editing === "ppc")       commitPpc();
+        if (editing === "interval")  commitInterval();
+        if (editing === "bookTotal") commitBookTotal();
+        if (editing === "bookRead")  commitBookRead();
+      }
+      if (e.key === "Escape") setEditing(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [editing, goalDraft, ppcDraft, intDraft, bookTotalDraft, bookReadDraft, restantesLivro, localGoal, localInterval, localPpc, localTotal]);
+
+  /* ---------- Modais (mantidos) e colapso da barra ---------- */
+  const [goalOpen,  setGoalOpen]  = useState(false);
+  const [cycleOpen, setCycleOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(true); // abre fechado por padrão
+
+  /* ===================== JSX ===================== */
   return (
-    <section aria-label="Progresso" className={s.wrap}>
-
-    {/*/ topo: título + % + status + dropdown /*/}
-    <header className={s.top}>
-      <div className={s.titleWrap}>
-      <button
-        ref={pillRef}
-        className={`${s.titlePill} ${menuOpen ? s.open : ""}`}
-        onClick={() => setMenuOpen(v => !v)}
-        aria-expanded={menuOpen}
-        aria-controls="bookMenu"
-      >
-        {title}
-        <span className={s.caret} aria-hidden>▾</span>
-      </button>
-        <div
-          id="bookMenu"
-          ref={menuRef}
-          className={`${s.menu} ${menuOpen ? s.menuOpen : ""}`}
-          role="menu"
-        >
-          {lib.books.length === 0 && <div className={s.menuEmpty}>Sem outros livros</div>}
-          {lib.books
-            .filter(b => b.id !== id)
-            .map(b => {
-              const t = Number(b.pagesTotal ?? b.pages ?? 0) || 0;
-              const r = Number(b.pagesRead ?? 0);
+    <section aria-label="Progresso" className={`${s.wrap} ${editing ? s.isEditing : ""}`}>
+      {/* topo */}
+      <header className={s.top}>
+        <div className={s.titleWrap}>
+          <button
+            ref={pillRef}
+            className={`${s.titlePill} ${menuOpen ? s.open : ""}`}
+            onClick={() => setMenuOpen(v => !v)}
+            aria-expanded={menuOpen}
+            aria-controls="bookMenu"
+          >
+            {activeBook.title || "Livro"}
+            <span className={s.caret} aria-hidden>▾</span>
+          </button>
+          <div
+            id="bookMenu"
+            ref={menuRef}
+            className={`${s.menu} ${menuOpen ? s.menuOpen : ""}`}
+            role="menu"
+          >
+            {books.filter(b => b.id !== activeBook.id).map(b => {
+              const t = num(b.pagesTotal ?? b.pages, 0), r = num(b.pagesRead, 0);
               const pctB = t ? Math.floor((r / t) * 100) : 0;
               return (
                 <button
                   key={b.id}
                   className={s.menuItem}
                   role="menuitem"
-                  onClick={() => { lib.setActiveId(b.id); setMenuOpen(false); }}
+                  onClick={() => { lib.setActiveId?.(b.id); setMenuOpen(false); }}
                 >
                   <span className={s.menuTitle}>{b.title}</span>
                   <span className={s.menuPct}>{pctB}%</span>
                 </button>
               );
             })}
-        </div>
-      </div>
-      <div className={s.subInfo}>
-        <span className={pct >= 100 ? s.badgeDone : s.badgeReading}>
-          {pct >= 100 ? "Concluído" : "Lendo"} • {pct}%
-        </span>
-      </div>
-    </header>
-
-      {/* retângulo preto com 3 mostradores */}
-      <div className={s.statsBar}>
-        <div className={s.stat}>
-          <strong className={s.kpi}>{pagesToday}</strong>
-          <span className={s.kpiLabel}>Pág lidas</span>
-        </div>
-
-        <div className={s.stat}>
-          <strong className={s.kpi}>{fmtMin(estMin)}</strong>
-          <span className={s.kpiLabel}>Tempo estimado</span>
-        </div>
-
-        <button 
-          type="button" 
-          className={`${s.stat} ${s.statBtn}`}
-          onClick={openCycle} 
-          title="Ajustar páginas e minutos por ciclo"
-        >
-          <strong className={s.kpi}>{ppm}</strong>
-          <span className={s.kpiLabel}>Pág / ciclo</span>
-        </button>
-      </div>
-
-      {/* grade de ciclos (agora usa ppm e abre o modal pelo tempo) */}
-      <div className={s.grid}>
-      {[...Array(9)].map((_, i) => (
-          <div key={i} className={s.row}>
-            <div className={s.rowIdx}>{i + 1}</div>
-
-            <div className={s.blocks}>
-            {[...Array(Math.max(0, Number(ppm) || 0))].map((_, j) => (
-                <span key={j} className={s.block} />
-              ))}
-            </div>
-            <div className={s.rowTime}>
-            <button type="button" className={s.timeBtn} onClick={openCycle}>{interval}m</button>
-            </div>
           </div>
-        ))}
+        </div>
+        <div className={s.subInfo}>
+          <span className={pctGeral >= 100 ? s.badgeDone : s.badgeReading}>
+            {pctGeral >= 100 ? "Concluído" : "Lendo"} • {pctGeral}%
+          </span>
+        </div>
+      </header>
+
+      {/* overlay: clicar fora confirma o que estiver editando */}
+      {editing && (
+        <div
+          className={s.dim}
+          onPointerDown={(e) => {
+            e.preventDefault();
+            if (editing === "goal")      commitGoal();
+            if (editing === "ppc")       commitPpc();
+            if (editing === "interval")  commitInterval();
+            if (editing === "bookTotal") commitBookTotal();
+            if (editing === "bookRead")  commitBookRead();
+          }}
+        />
+      )}
+
+      {/* ===== BARRA PRETA — KNOBS c/ EXPANDIR/RECOLHER ===== */}
+      <div className={`${s.knobBoard} ${collapsed ? s.isCollapsed : ""}`}>
+        {/* botão do cantinho */}
+        <button
+          type="button"
+          className={s.cornerToggle}
+          onClick={() => setCollapsed(v => !v)}
+          aria-label={collapsed ? "Expandir" : "Recolher"}
+          aria-expanded={!collapsed}
+        >
+          <span className={s.cornerIcon} aria-hidden />
+        </button>
+
+        {/* Linha de cima */}
+        <div className={s.knobRow}>
+          {/* Meta do dia (editável) */}
+          <div className={s.knob}>
+            {editing === "goal" ? (
+              <>
+                <input
+                  className={s.kEditInput}
+                  autoFocus
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  placeholder="0"
+                  value={goalDraft}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setGoalDraft(v);
+                    const live = clamp(parseGoal(v), 0, restantesLivro);
+                    setLocalGoal(live);
+                    saveBookSettings(activeBook, { goal: live });
+                  }}
+                  onBlur={commitGoal}
+                />
+                <div className={s.knobLabel}>Meta do dia</div>
+              </>
+            ) : (
+              <button type="button" className={s.kBtn} onClick={startEditGoal}>
+                <div className={`${s.knobValue} ${goalJump ? s.jump : ""}`}>{localGoal}</div>
+                <div className={s.knobLabel}>Meta do dia</div>
+              </button>
+            )}
+          </div>
+
+          {/* Tempo estimado (derivado) */}
+          <div className={s.knob}>
+            <div className={s.knobValue}>{fmtMin(estMin)}</div>
+            <div className={s.knobLabel}>Tempo estimado</div>
+          </div>
+
+          {/* Pág / ciclo (editável) */}
+          <div className={s.knob}>
+            {editing === "ppc" ? (
+              <>
+                <input
+                  className={s.kEditInput}
+                  autoFocus
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  placeholder="0"
+                  value={ppcDraft}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setPpcDraft(v);
+                    setLocalPpc(clamp(parseIntLike(v), 0, Math.max(0, localGoal || 0)));
+                  }}
+                  onBlur={commitPpc}
+                />
+                <div className={s.knobLabel}>Pág / ciclo</div>
+              </>
+            ) : (
+              <button type="button" className={s.kBtn} onClick={startEditPpc}>
+                <div className={`${s.knobValue} ${ppcJump ? s.jump : ""}`}>{localPpc}</div>
+                <div className={s.knobLabel}>Pág / ciclo</div>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Linha de baixo */}
+        <div className={s.knobRowExtra} aria-hidden={collapsed}>
+          {/* Total de páginas do livro (EDITÁVEL) */}
+          <div className={s.knob}>
+            {editing === "bookTotal" ? (
+              <>
+                <input
+                  className={s.kEditInput}
+                  autoFocus
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  placeholder="0"
+                  value={bookTotalDraft}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setBookTotalDraft(v);
+                    const live = Math.max(1, parseIntLike(v));
+                    setLocalTotal(live);
+                    if (localRead > live) setLocalRead(live);
+                    saveBookSettings(activeBook, { pagesTotal: live });
+                  }}
+                  onBlur={commitBookTotal}
+                />
+                <div className={s.knobLabel}>Págs do livro</div>
+              </>
+            ) : (
+              <button type="button" className={s.kBtn} onClick={startEditBookTotal}>
+                <div className={`${s.knobValue} ${bookTotalJump ? s.jump : ""}`}>{localTotal}</div>
+                <div className={s.knobLabel}>Págs do livro</div>
+              </button>
+            )}
+          </div>
+
+          {/* Páginas lidas (GERAL) — EDITÁVEL */}
+          <div className={s.knob}>
+            {editing === "bookRead" ? (
+              <>
+                <input
+                  className={s.kEditInput}
+                  autoFocus
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  placeholder="0"
+                  value={bookReadDraft}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setBookReadDraft(v);
+                    const live = Math.min(Math.max(0, parseIntLike(v)), localTotal);
+                    setLocalRead(live);
+                    saveBookSettings(activeBook, { pagesRead: live });
+                  }}
+                  onBlur={commitBookRead}
+                />
+                <div className={s.knobLabel}>Págs lidas</div>
+              </>
+            ) : (
+              <button type="button" className={s.kBtn} onClick={startEditBookRead}>
+                <div className={`${s.knobValue} ${bookReadJump ? s.jump : ""}`}>{localRead}</div>
+                <div className={s.knobLabel}>Págs lidas</div>
+              </button>
+            )}
+          </div>
+
+          {/* Ciclo (min) — EDITÁVEL */}
+          <div className={s.knob}>
+            {editing === "interval" ? (
+              <>
+                <input
+                  className={s.kEditInput}
+                  autoFocus
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  placeholder="0"
+                  value={intDraft}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setIntDraft(v);
+                    setLocalInterval(Math.max(0, parseIntLike(v)));
+                  }}
+                  onBlur={commitInterval}
+                />
+                <div className={s.knobLabel}>Ciclo (min)</div>
+              </>
+            ) : (
+              <button type="button" className={s.kBtn} onClick={startEditInterval}>
+                <div className={`${s.knobValue} ${intJump ? s.jump : ""}`}>{localInterval}</div>
+                <div className={s.knobLabel}>Ciclo (min)</div>
+              </button>
+            )}
+          </div>
+        </div>
       </div>
-      {/* agora o mostrador inferior é "Restantes" */}
-      <div className={s.bottomStat}>
-        <span className={s.bottomLabel}>Restantes</span>
-        <strong className={s.bottomValue}>{restantes}</strong>
-      </div>
+
+      {/* Modais (ainda úteis para futuras funções) */}
+      <GoalModal
+        open={goalOpen}
+        initialGoal={localGoal}
+        maxGoal={restantesLivro}
+        onClose={() => setGoalOpen(false)}
+        onSave={(g) => { setLocalGoal(clamp(num(g,0), 0, restantesLivro)); saveBookSettings(activeBook, { goal: clamp(num(g,0),0,restantesLivro) }); }}
+      />
       <CycleSettingsModal
         open={cycleOpen}
-        initialPpm={ppm}
-        initialInterval={interval}
-        onClose={closeCycle}                // <— aqui!
-        onChange={handleCycleChange}
-        onDiscoverPPM={() => { setCycleOpen(false); nav("/ppm"); }}
+        initialPpc={ppcEff}
+        initialInterval={localInterval}
+        maxPpc={Math.max(1, localGoal || 1)}
+        onClose={() => setCycleOpen(false)}
+        onSave={(ppcIn, intervalIn) => {
+          const safeInterval = Math.max(1, num(intervalIn, 1));
+          const capPpc       = clamp(num(ppcIn, 1), 1, Math.max(1, localGoal || 1));
+          const nextPPM      = Math.max(0.1, capPpc / safeInterval);
+          setLocalInterval(safeInterval);
+          setLocalPpc(capPpc);
+          lib?.setState?.(s0 => ({ ...s0, ppm: nextPPM, interval: safeInterval, state: { ...(s0.state||{}), ppm: nextPPM, interval: safeInterval } }));
+          saveBookSettings(activeBook, { ppm: nextPPM, interval: safeInterval });
+        }}
       />
     </section>
   );
