@@ -253,48 +253,28 @@ export default function Progress(){
     setEditing(null);
   };
 
-  // setter util para pagesToday (persistindo por livro e respeitando a meta atual)
+  // controla apenas o "lidas hoje" (sem tocar no pagesRead do livro)
+// o total exibido usa o derivado `lidasGerais`
   const setPagesToday = (updater) => {
     setTodayLocal((prev) => {
-      const want   = (typeof updater === "function") ? updater(prev) : updater;
+      const want   = typeof updater === "function" ? updater(prev) : updater;
       const capped = clamp(want, 0, Math.max(0, localGoal));
-      const delta  = capped - prev;
-  
-      // atualiza espelho local de pagesRead com base no delta
-      setLocalRead(r => clamp(r + delta, 0, localTotal));
-  
-      // atualiza provider lendo o valor atual de pagesRead lá dentro
-      lib?.setState?.(s0 => {
-        // ler valores atuais do provider
-        const curBook = Array.isArray(s0?.books)
-          ? s0.books.find(b => b.id === activeBook.id)
-          : (s0?.activeBook?.id === activeBook.id ? s0.activeBook : null);
-  
-        const total = Math.max(1, num(curBook?.pagesTotal ?? curBook?.pages ?? localTotal, localTotal));
-        const read0 = Math.max(0, num(curBook?.pagesRead, localRead));
-        const readNew = clamp(read0 + delta, 0, total);
-  
-        const books = Array.isArray(s0?.books)
-          ? s0.books.map(b => b.id === activeBook.id ? { ...b, pagesRead: readNew } : b)
-          : s0?.books;
-  
-        const ab = s0?.activeBook && s0.activeBook.id === activeBook.id
-          ? { ...s0.activeBook, pagesRead: readNew }
-          : s0?.activeBook;
-  
-        const state = {
+
+      // atualiza somente o draft no provider
+      lib?.setState?.(s0 => ({
+        ...s0,
+        state: {
           ...(s0.state || {}),
           progressDraft: { ...(s0.state?.progressDraft || {}), pagesToday: capped }
-        };
-  
-        return { ...s0, books, activeBook: ab, state };
-      });
-  
-      // persistir por livro
+        }
+      }));
+
+      // persiste por livro
       saveBookSettings(activeBook, { pagesToday: capped });
       return capped;
     });
   };
+
 
   const incOnePage = () => setPagesToday(p => p + 1);
   const decOnePage = () => setPagesToday(p => p - 1);
@@ -328,51 +308,48 @@ const incPage = (delta) => {
 // adiciona 1 ciclo (usa págs/ciclo atual)
 const addCycle   = () => setPagesToday(p => p + Math.max(0, localPpc));
 
-  // grava o dia: soma pagesToday nas lidas gerais e zera today
+  // grava o dia: soma "hoje" no lido geral e zera o "hoje"
   const commitDayRead = () => {
-    lib?.setState?.((s0) => {
-      const today = Math.max(0, num(s0?.state?.progressDraft?.pagesToday, 0));
-  
-      // achar livro atual no provider
-      const curBook =
-        Array.isArray(s0?.books)
-          ? s0.books.find(b => b.id === activeBook.id)
-          : (s0?.activeBook?.id === activeBook.id ? s0.activeBook : null);
-  
-      const total = Math.max(
-        1,
-        num(curBook?.pagesTotal ?? curBook?.pages ?? localTotal, localTotal)
-      );
-      const read0 = Math.max(0, num(curBook?.pagesRead, localRead));
-  
-      // soma sem ultrapassar total
-      const add     = Math.min(today, Math.max(0, total - read0));
-      const readNew = Math.min(total, read0 + add);
-  
-      // atualizar books/activeBook
+    const today = Math.max(0, todayLocal);
+    if (today <= 0) {
+      setTodayLocal(0);
+      saveBookSettings(activeBook, { pagesToday: 0 });
+      return;
+    }
+
+    // soma local, sem ultrapassar o total do livro
+    const add     = Math.min(today, Math.max(0, localTotal - localRead));
+    const readNew = Math.min(localTotal, localRead + add);
+
+    // 1) espelhos locais primeiro (para a UI não “cair”)
+    setLocalRead(readNew);
+    setTodayLocal(0);
+
+    // 2) provider (books + activeBook + draft zerado)
+    lib?.setState?.(s0 => {
       const books = Array.isArray(s0?.books)
-        ? s0.books.map(b => b.id === activeBook.id ? { ...b, pagesRead: readNew } : b)
+        ? s0.books.map(b =>
+            b.id === activeBook.id ? { ...b, pagesRead: readNew } : b
+          )
         : s0?.books;
-  
+
       const activeBookNext =
         s0?.activeBook && s0.activeBook.id === activeBook.id
           ? { ...s0.activeBook, pagesRead: readNew }
           : s0?.activeBook;
-  
-      // zerar pagesToday no draft
+
       const state = {
         ...(s0.state || {}),
         progressDraft: { ...(s0.state?.progressDraft || {}), pagesToday: 0 }
       };
-  
+
       return { ...s0, books, activeBook: activeBookNext, state };
     });
-  
-    // refletir imediatamente na UI local e persistir
-    setTodayLocal(0);
-    setLocalRead(r => Math.min(localTotal, Math.max(r, 0))); // mantém em sincronia
-    saveBookSettings(activeBook, { pagesToday: 0 });
+
+    // 3) persistência
+    saveBookSettings(activeBook, { pagesToday: 0, pagesRead: readNew });
   };
+
 
   // limpa o progresso do dia (zera today)
   const clearToday = () => setPagesToday(0);
@@ -581,7 +558,8 @@ const addCycle   = () => setPagesToday(p => p + Math.max(0, localPpc));
               </>
             ) : (
               <button type="button" className={s.kBtn} onClick={startEditBookRead}>
-                <div className={`${s.knobValue} ${bookReadJump ? s.jump : ""}`}>{localRead}</div>
+                <div className={`${s.knobValue} ${bookReadJump ? s.jump : ""}`}>{lidasGerais}</div>
+
                 <div className={s.knobLabel}>Págs lidas</div>
               </button>
             )}
