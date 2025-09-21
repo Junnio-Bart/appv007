@@ -481,11 +481,14 @@
   inset: 0;
   background: rgba(0,0,0,.28);
   backdrop-filter: blur(3px);
-  z-index: 1002;                    /* menor que a barra */
+  z-index: 2000;    /* era 1002 — sob a barra */
   pointer-events: auto;
 }
-.knobBoard{ position: relative; z-index: 1002; } /* barra por cima do blur */
-
+.knobBoard{
+  position: relative;
+  z-index: 3000;    /* acima do overlay (2000) */
+  isolation: isolate;
+}
 /* botão “fantasma” do knob (enquanto é só texto) */
 .kBtn{
   appearance:none; background:transparent; border:0; padding:0; margin:0;
@@ -516,73 +519,69 @@
 .jump{ animation:kJump .18s ease-out both; }
 
 .wrap {
-  position: relative;               /* garante stacking context local */
-  z-index: 0;
+  position: relative;   /* mantém para posicionamentos internos */
+  /* REMOVER o z-index para não criar stacking-context */
 }
-
 /* ===== Painel de ações (caixa) ===== */
 .actionsPanel{
-  margin-top: 16px;
+  max-width: 720px;                /* <<< ajuste a largura máx do bloco */
+  margin: 16px auto 0;
   padding: 18px 20px;
   border-radius: 16px;
   border: 1px solid #2a3447;
-  background: rgba(0,0,0,.12);
-  display: grid;
-  grid-template-columns: repeat(3, minmax(120px, 1fr));
-  gap: 14px 20px;
-  justify-items: center;
-}
-
-/* linha de baixo (2 botões) ocupando 2 colunas cada */
-.actionsPanel .wide{ grid-column: span 1; }
-@media (min-width: 520px){
-  .actionsPanel .wide{ grid-column: span 1; }
-}
-@media (max-width: 380px){
-  .actionsPanel{ grid-template-columns: repeat(2, minmax(100px, 1fr)); }
-}
-
-/* ===== Painel de ações (caixa) ===== */
-.actionsPanel{
-  margin: 16px auto 0;
-  padding: 22px 24px;
-  border-radius: 16px;
-  border: 1px solid #2a3447;
-  background: rgba(0,0,0,.12);
+  background: rgba(0, 0, 0, 0.192);
   box-shadow: 0 10px 24px rgba(0,0,0,.18) inset;
-  max-width: 720px;
-  width: 100%;
-
-  /* grid de 12 colunas para liberdade de posicionamento */
-  display: grid;
-  grid-template-columns: repeat(12, 1fr);
-  gap: 18px 24px;
-  align-items: center;
-  justify-items: center;
 }
 
-/* spans utilitárias (12-col) */
-.span4 { grid-column: span 4; }  /* 3 por linha */
-.span6 { grid-column: span 6; }  /* 2 por linha */
-
-/* responsivo simples: em telas estreitas vira 2 colunas */
-@media (max-width: 520px){
-  .actionsPanel{
-    grid-template-columns: repeat(2, 1fr);
-    gap: 14px 16px;
-  }
-  .span4 { grid-column: span 1; } /* cada botão ocupa 1 célula */
-  .span6 { grid-column: span 2; } /* botões largos ocupam a linha toda */
+/* linhas */
+.actionsRow{            /* linha dos 3 botões */
+  display: flex;
+  flex-wrap: wrap;      /* quebra quando faltar espaço */
+  gap: 14px 20px;
+  justify-content: center;
 }
 
-/* ===== Botões ===== */
+.actionsRowWide{        /* linha dos 2 botões largos */
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 20px;
+  justify-content: center;
+  margin-top: 12px;
+}
+
+/* forma/tamanho compartilhado dos 3 primeiros */
+.triBtn{
+  /* centralize todos os ajustes aqui */
+  --tri-minw: 50px;    /* largura mínima */
+  --tri-maxw: 80px;    /* largura máxima */
+  --tri-h:    55px;     /* altura */
+  --tri-r:    12px;     /* raio dos cantos */
+
+  flex: 1 1 clamp(var(--tri-minw), 30vw, var(--tri-maxw));
+  height: var(--tri-h);
+  border-radius: var(--tri-r);
+  padding: 0 18px;
+}
+
+/* forma/tamanho dos botões largos (linha 2) */
+.wideBtn{
+  --wide-minw: 60px;
+  --wide-maxw: 80px;
+  --wide-h:    55px;
+  --wide-r:    12px;
+
+  flex: 1 1 clamp(var(--wide-minw), 42vw, var(--wide-maxw));
+  height: var(--wide-h);
+  border-radius: var(--wide-r);
+  padding: 0 20px;
+}
+
+/* botão base (tipografia, sombra, etc.) */
 .actBtn{
   appearance: none;
   border: 0;
-  border-radius: 14px;
-  padding: 14px 18px;
   font-weight: 800;
-  font-size: 18px;
+  font-size: 15px;
   line-height: 1;
   color: #0b1220;
   box-shadow: 0 6px 14px rgba(0,0,0,.25);
@@ -595,8 +594,15 @@
 .actBtn:hover{ filter: brightness(1.06); }
 .actBtn:active{ transform: translateY(1px); }
 
-/* cores (iguais ao mock) */
-.actGreen{ background:#34D399; color:#0b1220; }   /* +1 pág / -1 pág */
-.actBlue{  background:#2563EB; color:#E6F2EC; }   /* +1 ciclo */
-.actYellow{background:#F59E0B; color:#0b1220; }   /* Gravar dia */
-.actRed{   background:#EF4444; color:#FFEFEF; }   /* Limpar tudo */
+/* cores dos botões */
+.actGreen{  background:#34D399; color:#0b1220; }  /* +1 pág */
+.actBlue{   background:#2563EB; color:#E6F2EC; }  /* +1 ciclo */
+.actMint{   background:#10B981; color:#0b1220; }  /* -1 pág (outra cor) */
+.actYellow{ background:#F59E0B; color:#0b1220; }  /* Gravar dia */
+.actRed{    background:#EF4444; color:#FFEFEF; }  /* Limpar tudo */
+
+/* quando o menu de livros estiver aberto, o topo sobe acima de tudo */
+.topRaise {
+  position: relative;
+  z-index: 6000;  /* > knobBoard(3000) e > overlay(2000) */
+}

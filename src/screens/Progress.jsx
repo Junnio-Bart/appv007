@@ -185,11 +185,41 @@ export default function Progress(){
   const [bookReadJump,   setBookReadJump]   = useState(false);
 
   // abrir edições
-  const startEditGoal = () => { setGoalDraft(String(localGoal ?? 0)); setEditing("goal"); setGoalJump(true); setTimeout(()=>setGoalJump(false),180); };
-  const startEditPpc  = () => { setPpcDraft(String(localPpc ?? 0));   setEditing("ppc");  setPpcJump(true);  setTimeout(()=>setPpcJump(false),180); };
-  const startEditInterval = () => { setIntDraft(String(localInterval ?? 0)); setEditing("interval"); setIntJump(true); setTimeout(()=>setIntJump(false),180); };
-  const startEditBookTotal= () => { setBookTotalDraft(String(localTotal ?? 0)); setEditing("bookTotal"); setBookTotalJump(true); setTimeout(()=>setBookTotalJump(false),180); };
-  const startEditBookRead = () => { setBookReadDraft(String(localRead ?? 0));  setEditing("bookRead");  setBookReadJump(true);  setTimeout(()=>setBookReadJump(false),180); };
+  const startEditGoal = () => {
+     setMenuOpen(false);
+     setGoalDraft(String(localGoal ?? 0)); 
+     setEditing("goal"); 
+     setGoalJump(true); 
+     setTimeout(()=>setGoalJump(false),180); 
+    };
+  const startEditPpc  = () => { 
+    setMenuOpen(false);
+    setPpcDraft(String(localPpc ?? 0));   
+    setEditing("ppc");  
+    setPpcJump(true);  
+    setTimeout(()=>setPpcJump(false),180); 
+  };
+  const startEditInterval = () => { 
+    setMenuOpen(false);
+    setIntDraft(String(localInterval ?? 0)); 
+    setEditing("interval"); 
+    setIntJump(true); 
+    setTimeout(()=>setIntJump(false),180); 
+  };
+  const startEditBookTotal= () => { 
+    setMenuOpen(false);
+    setBookTotalDraft(String(localTotal ?? 0)); 
+    setEditing("bookTotal"); 
+    setBookTotalJump(true); 
+    setTimeout(()=>setBookTotalJump(false),180); 
+  };
+  const startEditBookRead = () => { 
+    setMenuOpen(false);
+    setBookReadDraft(String(localRead ?? 0));  
+    setEditing("bookRead");  
+    setBookReadJump(true);  
+    setTimeout(()=>setBookReadJump(false),180); 
+  };
 
   // commits
   const commitGoal = () => {
@@ -364,12 +394,15 @@ const addCycle   = () => setPagesToday(p => p + Math.max(0, localPpc));
   return (
     <section aria-label="Progresso" className={`${s.wrap} ${editing ? s.isEditing : ""}`}>
       {/* topo */}
-      <header className={s.top}>
+      <header className={`${s.top} ${menuOpen ? s.topRaise : ""}`}>
         <div className={s.titleWrap}>
           <button
             ref={pillRef}
             className={`${s.titlePill} ${menuOpen ? s.open : ""}`}
-            onClick={() => setMenuOpen(v => !v)}
+            onClick={() => {
+              setEditing(null);           // <- fecha overlay/edição
+              setMenuOpen(v => !v);       // abre/fecha menu
+            }}
             aria-expanded={menuOpen}
             aria-controls="bookMenu"
           >
@@ -605,48 +638,50 @@ const addCycle   = () => setPagesToday(p => p + Math.max(0, localPpc));
 
       {/* ===== Painel de Ações ===== */}
       <div className={s.actionsPanel}>
-       <button 
-          type="button"
-          className={`${s.actBtn} ${s.actGreen}`}
-          onClick={() => incPage(+1)}
-       >
-         +1 pág
-        </button>
+        {/* primeira linha: 3 botões (mesma forma) */}
+        <div className={s.actionsRow}>
+          <button 
+              type="button"
+              className={`${s.actBtn} ${s.triBtn} ${s.actGreen}`}
+              onClick={() => incPage(+1)}
+          >
+            + 1 pág
+            </button>
 
-        <button
-          type="button"
-          className={`${s.actBtn} ${s.actBlue}`}
-          onClick={() => setPagesToday(p => p + Math.max(0, localPpc))}
-        >
-          +1 ciclo
-        </button>
-
-      <button 
-        type="button" 
-        className={`${s.actBtn} ${s.actGreen}`}  
-        onClick={() => incPage(-1)}
-       >
-          -1 pág
-      </button>
-
-        {/* linha 2: dois botões largos (cada um 6 colunas) */}
-        <button
-          type="button"
-          className={`${s.actBtn} ${s.actYellow} ${s.span3}`}
-          onClick={commitDayRead}
-        >
-          Gravar dia
-        </button>
-
-        <button
-          type="button"
-          className={`${s.actBtn} ${s.actRed} ${s.span3}`}
-          onClick={clearToday}
-        >
-          Limpar tudo
-        </button>
+          <button
+            type="button"
+            className={`${s.actBtn} ${s.triBtn} ${s.actBlue}`}
+            onClick={() => setPagesToday(p => p + Math.max(0, localPpc))}
+          >
+            + 1 ciclo
+          </button>
+          <button 
+            type="button" 
+            className={`${s.actBtn} ${s.triBtn} ${s.actGreen}`}
+            onClick={() => incPage(-1)}
+          >
+            - 1 pág
+          </button>
         </div>
-      
+         {/* segunda linha: 2 botões largos (mesma forma) */}
+        <div className={s.actionsRowWide}>
+          <button
+            type="button"
+            className={`${s.actBtn} ${s.wideBtn} ${s.actYellow}`}
+            onClick={commitDayRead}
+          >
+            Gravar dia
+          </button>
+
+          <button
+            type="button"
+            className={`${s.actBtn} ${s.wideBtn} ${s.actRed}`}
+            onClick={clearToday}
+          >
+            Limpar tudo
+          </button>
+        </div>
+      </div>
      {/* Modais (ainda úteis para futuras funções) */}
      <GoalModal
      open={goalOpen}

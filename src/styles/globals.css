@@ -57,7 +57,6 @@ p { font-size: var(--fs-body); color: var(--muted); margin:0 }
   height: var(--header-h, 96px);
   padding-top: max(8px, env(safe-area-inset-top)); 
   padding-bottom: 6px;
-  
 }
 
 /* Botão do logo */
@@ -124,7 +123,7 @@ p { font-size: var(--fs-body); color: var(--muted); margin:0 }
   display: flex;
   justify-content: center;
   padding: calc(env(safe-area-inset-top, 0px) + 6px) 0 16px; /* notch + pouco espaço */
-  background: #0f172a;
+  background: var(--bg);
 }
 
 /* botão “limpo” */
@@ -140,7 +139,7 @@ p { font-size: var(--fs-body); color: var(--muted); margin:0 }
   height: 85px !important;  /* troque p/ 64, 72… */
   width: auto !important;
   display: block;
-  z-index: 1000;
+  z-index: 0;
 }
 
 .logo-text{ font-weight:900; letter-spacing:1px; line-height:1;
