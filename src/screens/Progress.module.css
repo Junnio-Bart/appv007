@@ -519,3 +519,84 @@
   position: relative;               /* garante stacking context local */
   z-index: 0;
 }
+
+/* ===== Painel de ações (caixa) ===== */
+.actionsPanel{
+  margin-top: 16px;
+  padding: 18px 20px;
+  border-radius: 16px;
+  border: 1px solid #2a3447;
+  background: rgba(0,0,0,.12);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(120px, 1fr));
+  gap: 14px 20px;
+  justify-items: center;
+}
+
+/* linha de baixo (2 botões) ocupando 2 colunas cada */
+.actionsPanel .wide{ grid-column: span 1; }
+@media (min-width: 520px){
+  .actionsPanel .wide{ grid-column: span 1; }
+}
+@media (max-width: 380px){
+  .actionsPanel{ grid-template-columns: repeat(2, minmax(100px, 1fr)); }
+}
+
+/* ===== Painel de ações (caixa) ===== */
+.actionsPanel{
+  margin: 16px auto 0;
+  padding: 22px 24px;
+  border-radius: 16px;
+  border: 1px solid #2a3447;
+  background: rgba(0,0,0,.12);
+  box-shadow: 0 10px 24px rgba(0,0,0,.18) inset;
+  max-width: 720px;
+  width: 100%;
+
+  /* grid de 12 colunas para liberdade de posicionamento */
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 18px 24px;
+  align-items: center;
+  justify-items: center;
+}
+
+/* spans utilitárias (12-col) */
+.span4 { grid-column: span 4; }  /* 3 por linha */
+.span6 { grid-column: span 6; }  /* 2 por linha */
+
+/* responsivo simples: em telas estreitas vira 2 colunas */
+@media (max-width: 520px){
+  .actionsPanel{
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px 16px;
+  }
+  .span4 { grid-column: span 1; } /* cada botão ocupa 1 célula */
+  .span6 { grid-column: span 2; } /* botões largos ocupam a linha toda */
+}
+
+/* ===== Botões ===== */
+.actBtn{
+  appearance: none;
+  border: 0;
+  border-radius: 14px;
+  padding: 14px 18px;
+  font-weight: 800;
+  font-size: 18px;
+  line-height: 1;
+  color: #0b1220;
+  box-shadow: 0 6px 14px rgba(0,0,0,.25);
+  cursor: pointer;
+  user-select: none;
+  width: 100%;
+  text-align: center;
+  transition: transform .08s ease, filter .08s ease;
+}
+.actBtn:hover{ filter: brightness(1.06); }
+.actBtn:active{ transform: translateY(1px); }
+
+/* cores (iguais ao mock) */
+.actGreen{ background:#34D399; color:#0b1220; }   /* +1 pág / -1 pág */
+.actBlue{  background:#2563EB; color:#E6F2EC; }   /* +1 ciclo */
+.actYellow{background:#F59E0B; color:#0b1220; }   /* Gravar dia */
+.actRed{   background:#EF4444; color:#FFEFEF; }   /* Limpar tudo */

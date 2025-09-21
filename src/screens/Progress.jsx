@@ -41,6 +41,8 @@ export default function Progress(){
 
   // Livros / seleção
   const books = Array.isArray(lib?.books) ? lib.books : [];
+
+  
   const activeBook = lib?.activeBook || lib?.current || lib?.selectedBook || null;
 
   if (!activeBook) {
@@ -85,46 +87,67 @@ export default function Progress(){
   // Se a meta diminuir, garanta ppc <= meta
   useEffect(() => { setLocalPpc(prev => Math.min(prev, Math.max(0, localGoal || 0))); }, [localGoal]);
 
+  const pagesTodayGlobal = Math.max(0, num(st.progressDraft?.pagesToday, 0));
+  const [todayLocal, setTodayLocal] = useState(pagesTodayGlobal);
+  // sempre que vier algo novo do provider (ou meta mudar), sincroniza o local
+  useEffect(() => {
+    setTodayLocal(Math.max(0, num(lib?.state?.progressDraft?.pagesToday, 0)));
+  }, [lib?.state?.progressDraft?.pagesToday]);
+
+  // se a meta mudar e o local estiver acima dela, capa
+  useEffect(() => {
+    setTodayLocal((t) => clamp(t, 0, Math.max(0, localGoal)));
+  }, [localGoal]);
+
+
   /* ---------- Derivados ---------- */
   const effPpm    = localInterval > 0 ? (localPpc / localInterval) : 0;
   const ppcEff    = Math.max(0, Math.min(localPpc, localGoal || localPpc));
-  const faltaHoje = Math.max(0, localGoal - Math.min(pagesToday, localGoal));
+  const faltaHoje = Math.max(0, localGoal - Math.min(todayLocal, localGoal));
   const estMin    = (faltaHoje > 0 && effPpm > 0) ? Math.ceil(faltaHoje / effPpm) : 0;
-  const pctGeral  = Math.min(100, Math.floor(((localRead + Math.min(pagesToday, localGoal)) / localTotal) * 100));
-  const lidasGerais = Math.min(localTotal, localRead + Math.min(pagesToday, localGoal));
+  const pctGeral  = Math.min(100, Math.floor(((localRead + Math.min(todayLocal, localGoal)) / localTotal) * 100));
+  const lidasGerais = Math.min(localTotal, localRead + Math.min(todayLocal, localGoal));
 
   /* ---------- Hidratar do localStorage quando trocar de livro ---------- */
   useEffect(() => {
     const saved = loadBookSettings(activeBook);
     if (!saved) return;
-
-    const savedGoal     = Number.isFinite(saved.goal)     ? saved.goal     : undefined;
-    const savedInterval = Number.isFinite(saved.interval) ? saved.interval : undefined;
-    const savedPpm      = Number.isFinite(saved.ppm)      ? saved.ppm      : undefined;
-    const savedTotal    = Number.isFinite(saved.pagesTotal) ? saved.pagesTotal : undefined;
-    const savedRead     = Number.isFinite(saved.pagesRead)  ? saved.pagesRead  : undefined;
-
-    // aplica clamps seguros com base no livro atual
+  
+    const savedGoal     = Number.isFinite(saved.goal)        ? saved.goal        : undefined;
+    const savedInterval = Number.isFinite(saved.interval)    ? saved.interval    : undefined;
+    const savedPpm      = Number.isFinite(saved.ppm)         ? saved.ppm         : undefined;
+    const savedTotal    = Number.isFinite(saved.pagesTotal)  ? saved.pagesTotal  : undefined;
+    const savedRead     = Number.isFinite(saved.pagesRead)   ? saved.pagesRead   : undefined;
+    const savedToday    = Number.isFinite(saved.pagesToday)  ? saved.pagesToday  : undefined;
+  
+    // clamps seguros com base no livro atual
     const capTotal    = Math.max(1, num(savedTotal, initialTotal));
     const capRead     = Math.max(0, Math.min(num(savedRead, initialRead), capTotal));
     const capGoal     = clamp(num(savedGoal, goal), 0, Math.max(0, capTotal - capRead));
     const capInterval = Math.max(0, num(savedInterval, interval));
     const capPpm      = Math.max(0, num(savedPpm, ppm));
-
+    const capToday    = clamp(num(savedToday, 0), 0, Math.max(0, capGoal));
+  
     // UI imediata
     setLocalTotal(capTotal);
     setLocalRead(capRead);
     setLocalGoal(capGoal);
     setLocalInterval(capInterval);
     setLocalPpc(Math.max(0, Math.floor(capPpm * capInterval)));
-
-    // provider (compat)
+  
+    // provider (inclui pagesToday)
     lib?.setState?.(s0 => ({
       ...s0,
       goal: capGoal,
       ppm: capPpm,
       interval: capInterval,
-      state: { ...(s0.state || {}), goal: capGoal, ppm: capPpm, interval: capInterval }
+      state: {
+        ...(s0.state || {}),
+        goal: capGoal,
+        ppm: capPpm,
+        interval: capInterval,
+        progressDraft: { ...(s0.state?.progressDraft || {}), pagesToday: capToday }
+      }
     }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeBook?.id]);
@@ -230,6 +253,53 @@ export default function Progress(){
     setEditing(null);
   };
 
+  // setter util para pagesToday (persistindo por livro e respeitando a meta atual)
+  const setPagesToday = (updater) => {
+    setTodayLocal((prev) => {
+      const want   = (typeof updater === "function") ? updater(prev) : updater;
+      const capped = clamp(want, 0, Math.max(0, localGoal));
+      const delta  = capped - prev;
+  
+      // atualiza espelho local de pagesRead com base no delta
+      setLocalRead(r => clamp(r + delta, 0, localTotal));
+  
+      // atualiza provider lendo o valor atual de pagesRead lá dentro
+      lib?.setState?.(s0 => {
+        // ler valores atuais do provider
+        const curBook = Array.isArray(s0?.books)
+          ? s0.books.find(b => b.id === activeBook.id)
+          : (s0?.activeBook?.id === activeBook.id ? s0.activeBook : null);
+  
+        const total = Math.max(1, num(curBook?.pagesTotal ?? curBook?.pages ?? localTotal, localTotal));
+        const read0 = Math.max(0, num(curBook?.pagesRead, localRead));
+        const readNew = clamp(read0 + delta, 0, total);
+  
+        const books = Array.isArray(s0?.books)
+          ? s0.books.map(b => b.id === activeBook.id ? { ...b, pagesRead: readNew } : b)
+          : s0?.books;
+  
+        const ab = s0?.activeBook && s0.activeBook.id === activeBook.id
+          ? { ...s0.activeBook, pagesRead: readNew }
+          : s0?.activeBook;
+  
+        const state = {
+          ...(s0.state || {}),
+          progressDraft: { ...(s0.state?.progressDraft || {}), pagesToday: capped }
+        };
+  
+        return { ...s0, books, activeBook: ab, state };
+      });
+  
+      // persistir por livro
+      saveBookSettings(activeBook, { pagesToday: capped });
+      return capped;
+    });
+  };
+
+  const incOnePage = () => setPagesToday(p => p + 1);
+  const decOnePage = () => setPagesToday(p => p - 1);
+
+
   // atalhos de teclado
   useEffect(() => {
     if (!editing) return;
@@ -246,6 +316,67 @@ export default function Progress(){
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [editing, goalDraft, ppcDraft, intDraft, bookTotalDraft, bookReadDraft, restantesLivro, localGoal, localInterval, localPpc, localTotal]);
+
+  // incrementa/diminui 1 página (capando em 0..localGoal)
+const incPage = (delta) => {
+  setPagesToday((p) => {
+    const next = p + delta;
+    return clamp(next, 0, Math.max(0, localGoal));
+  });
+};
+
+// adiciona 1 ciclo (usa págs/ciclo atual)
+const addCycle   = () => setPagesToday(p => p + Math.max(0, localPpc));
+
+  // grava o dia: soma pagesToday nas lidas gerais e zera today
+  const commitDayRead = () => {
+    lib?.setState?.((s0) => {
+      const today = Math.max(0, num(s0?.state?.progressDraft?.pagesToday, 0));
+  
+      // achar livro atual no provider
+      const curBook =
+        Array.isArray(s0?.books)
+          ? s0.books.find(b => b.id === activeBook.id)
+          : (s0?.activeBook?.id === activeBook.id ? s0.activeBook : null);
+  
+      const total = Math.max(
+        1,
+        num(curBook?.pagesTotal ?? curBook?.pages ?? localTotal, localTotal)
+      );
+      const read0 = Math.max(0, num(curBook?.pagesRead, localRead));
+  
+      // soma sem ultrapassar total
+      const add     = Math.min(today, Math.max(0, total - read0));
+      const readNew = Math.min(total, read0 + add);
+  
+      // atualizar books/activeBook
+      const books = Array.isArray(s0?.books)
+        ? s0.books.map(b => b.id === activeBook.id ? { ...b, pagesRead: readNew } : b)
+        : s0?.books;
+  
+      const activeBookNext =
+        s0?.activeBook && s0.activeBook.id === activeBook.id
+          ? { ...s0.activeBook, pagesRead: readNew }
+          : s0?.activeBook;
+  
+      // zerar pagesToday no draft
+      const state = {
+        ...(s0.state || {}),
+        progressDraft: { ...(s0.state?.progressDraft || {}), pagesToday: 0 }
+      };
+  
+      return { ...s0, books, activeBook: activeBookNext, state };
+    });
+  
+    // refletir imediatamente na UI local e persistir
+    setTodayLocal(0);
+    setLocalRead(r => Math.min(localTotal, Math.max(r, 0))); // mantém em sincronia
+    saveBookSettings(activeBook, { pagesToday: 0 });
+  };
+
+  // limpa o progresso do dia (zera today)
+  const clearToday = () => setPagesToday(0);
+
 
   /* ---------- Modais (mantidos) e colapso da barra ---------- */
   const [goalOpen,  setGoalOpen]  = useState(false);
@@ -486,30 +617,100 @@ export default function Progress(){
         </div>
       </div>
 
-      {/* Modais (ainda úteis para futuras funções) */}
-      <GoalModal
-        open={goalOpen}
-        initialGoal={localGoal}
-        maxGoal={restantesLivro}
-        onClose={() => setGoalOpen(false)}
-        onSave={(g) => { setLocalGoal(clamp(num(g,0), 0, restantesLivro)); saveBookSettings(activeBook, { goal: clamp(num(g,0),0,restantesLivro) }); }}
-      />
-      <CycleSettingsModal
-        open={cycleOpen}
-        initialPpc={ppcEff}
-        initialInterval={localInterval}
-        maxPpc={Math.max(1, localGoal || 1)}
-        onClose={() => setCycleOpen(false)}
-        onSave={(ppcIn, intervalIn) => {
-          const safeInterval = Math.max(1, num(intervalIn, 1));
-          const capPpc       = clamp(num(ppcIn, 1), 1, Math.max(1, localGoal || 1));
-          const nextPPM      = Math.max(0.1, capPpc / safeInterval);
-          setLocalInterval(safeInterval);
-          setLocalPpc(capPpc);
-          lib?.setState?.(s0 => ({ ...s0, ppm: nextPPM, interval: safeInterval, state: { ...(s0.state||{}), ppm: nextPPM, interval: safeInterval } }));
-          saveBookSettings(activeBook, { ppm: nextPPM, interval: safeInterval });
-        }}
-      />
-    </section>
-  );
+      <div style={{textAlign:'center', marginTop:10, opacity:.9}}>
+        <small style={{display:'block'}}>Lidas hoje</small>
+        <strong style={{fontSize:20}}>
+          {todayLocal} / {localGoal}
+        </strong>
+      </div>
+
+
+      {/* ===== Painel de Ações ===== */}
+      <div className={s.actionsPanel}>
+       <button 
+          type="button"
+          className={`${s.actBtn} ${s.actGreen}`}
+          onClick={() => incPage(+1)}
+       >
+         +1 pág
+        </button>
+
+        <button
+          type="button"
+          className={`${s.actBtn} ${s.actBlue}`}
+          onClick={() => setPagesToday(p => p + Math.max(0, localPpc))}
+        >
+          +1 ciclo
+        </button>
+
+      <button 
+        type="button" 
+        className={`${s.actBtn} ${s.actGreen}`}  
+        onClick={() => incPage(-1)}
+       >
+          -1 pág
+      </button>
+
+        {/* linha 2: dois botões largos (cada um 6 colunas) */}
+        <button
+          type="button"
+          className={`${s.actBtn} ${s.actYellow} ${s.span3}`}
+          onClick={commitDayRead}
+        >
+          Gravar dia
+        </button>
+
+        <button
+          type="button"
+          className={`${s.actBtn} ${s.actRed} ${s.span3}`}
+          onClick={clearToday}
+        >
+          Limpar tudo
+        </button>
+        </div>
+      
+     {/* Modais (ainda úteis para futuras funções) */}
+     <GoalModal
+     open={goalOpen}
+     initialGoal={localGoal}
+     maxGoal={restantesLivro}
+     onClose={() => setGoalOpen(false)}
+     onSave={(g) => {
+       const final = clamp(num(g, 0), 0, restantesLivro);
+       setLocalGoal(final);
+       // mantém em memória e provider (se quiser)
+       lib?.setState?.(s0 => ({
+         ...s0,
+         goal: final,
+         state: { ...(s0.state || {}), goal: final }
+       }));
+       saveBookSettings(activeBook, { goal: final });
+     }}
+   />
+
+   <CycleSettingsModal
+     open={cycleOpen}
+     initialPpc={ppcEff}
+     initialInterval={localInterval}
+     maxPpc={Math.max(1, localGoal || 1)}
+     onClose={() => setCycleOpen(false)}
+     onSave={(ppcIn, intervalIn) => {
+       const safeInterval = Math.max(1, num(intervalIn, 1));
+       const capPpc       = clamp(num(ppcIn, 1), 1, Math.max(1, localGoal || 1));
+       const nextPPM      = Math.max(0.1, capPpc / safeInterval);
+
+       setLocalInterval(safeInterval);
+       setLocalPpc(capPpc);
+
+       lib?.setState?.(s0 => ({
+         ...s0,
+         ppm: nextPPM,
+         interval: safeInterval,
+         state: { ...(s0.state || {}), ppm: nextPPM, interval: safeInterval }
+       }));
+       saveBookSettings(activeBook, { ppm: nextPPM, interval: safeInterval });
+     }}
+   />
+ </section>
+);
 }
