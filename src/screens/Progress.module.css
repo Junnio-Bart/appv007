@@ -165,85 +165,6 @@
 }
 .timeBtn:hover{ filter:brightness(1.1); transform:translateY(-1px); }
 
-
-
-/* === GRID === */
-
-/* vars (com fallback) como no Mark01 */
-:root{
-  --grid-bg:     #0b1220;
-  --cell:        #1f2937;
-  --cell-border: #111927;
-  --cell-done:   #12311f;
-}
-
-
-.row{
-  display:grid;
-  grid-template-columns: 70px 1fr 70px;
-  align-items:center;
-  gap:6px;
-  margin:6px 0;
-}
-
-/* “índice do ciclo” com a mesma carinha do Mark01 (.cycle) */
-.rowIdx{
-  background: #0b1220;
-  border: 1px solid #1f2937;
-  padding: 6px 4px;
-  border-radius: 8px;
-  font-weight: 700;
-  text-align: center;
-}
-
-/* contêiner dos quadradinhos: inline-grid em fluxo de coluna, com gap curto */
-.blocks{
-  display: inline-grid;
-  grid-auto-flow: column; 
-  gap: 4px;
-  overflow:hidden;
-  width:100%;
-}
-
-/* quadradinho: 24x24, arredondado, borda e cores do Mark01 */
-.block{
-  width: 24px;
-  height: 24px; 
-  border-radius: 6px;
-  background: var(--cell);
-  border:1px solid #1f2937;
-}
-
-/* quadradinho “pintado” (página lida hoje) */
-.blockDone{
-  background:#12311f;
-  border-color:#1f4730;
-  box-shadow: inset 0 0 0 1px rgba(168,245,191,.25);
-}
-
-/* tempo à direita (mesmo estilo da .time do Mark01) */
-.rowTime{
-  background:#0b1220;
-  border:1px solid #1f2937;
-  border-radius:8px;
-  padding:6px 4px;
-  font-weight:700;
-  text-align:center;
-  color:#fde68a;
-}
-
-/* botão interno do tempo sem resetar o estilo */
-.timeBtn{
-  appearance:none;
-  background:transparent;
-  border:none;
-  padding:0;
-  margin:0;
-  font:inherit;
-  color:inherit;
-  cursor:pointer;
-}
-
 /* === TODAY === */
 .today{ text-align:center; margin:14px 0 6px; }
 .today small{ display:block; opacity:.8; }
@@ -527,14 +448,26 @@
 }
 
 /* ===== Painel de ações (caixa) ===== */
+
+/* seu painel de ações vira “flutuante” dentro do dock */
 .actionsPanel{
-  max-width: 720px;                /* <<< ajuste a largura máx do bloco */
-  margin: 16px auto 0;
+  pointer-events: auto;            /* reativa clique nos botões */
+  max-width: 720px;
+  margin: 0 auto;                  /* centraliza quando está “flutuando” */
   padding: 18px 20px;
   border-radius: 16px;
-  border: 1px solid #2a3447;
-  background: rgba(0, 0, 0, 0.192);
+  background: #0f172a;          /* ou use var(--panel) se preferir */
+  border: 1px solid #22314d;
   box-shadow: 0 10px 24px rgba(0,0,0,.18) inset;
+}
+
+/* opcional: um leve degradê pra separar quando a grade passa por trás */
+.actionsDock::before{
+  content: none;;
+  position:absolute; left:0; right:0; top:-16px; height:16px;
+  background: linear-gradient(to bottom, rgba(11,18,32,0), rgba(11,18,32,.6));
+  border-top-left-radius: 16px; border-top-right-radius: 16px;
+  pointer-events:none;
 }
 
 /* linhas */
@@ -611,19 +544,35 @@
   z-index: 6000;  /* > knobBoard(3000) e > overlay(2000) */
 }
 
-/* ===== CONTÊINER DA GRADE (com scroll moderno) ===== */
+/* ===== CONTÊINER DA GRADE ===== */
+
+/* você pode mover estas vars para tokens.css se quiser usar no app inteiro */
+:root{
+  /* cores dos blocos */
+  --cell-bg:        #1f2937;             /* cor do quadradinho vazio  */
+  --cell-bd:        #111927;             /* borda do vazio            */
+  --cell-done-bg:   #16a34a;             /* cor do preenchido         */
+  --cell-done-bd:   #16a34a;             /* borda do preenchido       */
+  --cell-done-glow: #16a34a;
+
+  /* tamanhos */
+  --block: 23px;                         /* lado do quadradinho (24→22) */
+  --gap:   4px;                          /* espaço entre quadradinhos    */
+
+  /* larguras dos “pills” laterais (mais estreitos) */
+  --idx-w: 60px;                         /* número do ciclo (70→52)   */
+  --time-w: 60px;                        /* tempo do ciclo (70→58)    */
+}
+
 .gridScroll{
   max-height: min(52vh, 480px);
   overflow: auto;
   padding: 14px 10px;
   border: 1px solid #1e293b;
   border-radius: 16px;
-  background: #0b1224;           /* bem próximo do fundo */
+  background: #0b1224;
   box-shadow: inset 0 10px 24px rgba(0,0,0,.18);
-  scrollbar-gutter: stable;       /* evita pular conteúdo quando aparece a barra */
 }
-
-/* WebKit */
 .gridScroll::-webkit-scrollbar{ width: 10px; }
 .gridScroll::-webkit-scrollbar-track{ background: transparent; }
 .gridScroll::-webkit-scrollbar-thumb{
@@ -632,27 +581,111 @@
   border-radius: 12px;
 }
 .gridScroll::-webkit-scrollbar-thumb:hover{ background: #25344c; }
-
-/* Firefox */
 .gridScroll{ scrollbar-width: thin; scrollbar-color: #1f2a3e transparent; }
 
-/* grade em si (já existia; só garanta que está assim) */
+
+/* ===== GRADE ===== */
 .grid{
   background:#0b1a2a;
   border:1px solid #1e293b;
   border-radius:16px;
   padding:12px;
   display:grid;
-  gap:1px;
+  gap:2px;                     /* pode manter 6px entre linhas */
   overflow:hidden;
-  position: relative; 
-  z-index: 0; }
+  position: relative;
+  z-index: 0;
+}
 
-/* linhas/células — você já tem estes estilos;
-   deixo aqui só para referência de que a grade usa .row, .rowIdx, .blocks, .block, .blockDone, .rowTime */
+/* ====== LINHA ====== */
+.row{
+  display:grid;
+  grid-template-columns: var(--idx-w) 1fr var(--time-w);
+  align-items:center;      /* 1 fileira => os pills ficam centralizados */
+  gap:6px;
+  margin:6px 0;
+}
+
+.row.hasWrap{ align-items:start; }
+
+.rowEmpty{
+  grid-template-columns: var(--idx-w) var(--time-w);
+}
+
+/* pills laterais mais estreitos */
+.rowIdx{
+  background:#0b1220;
+  border:1px solid #1f2937;
+  padding:6px 4px;
+  border-radius:8px;
+  font-weight:700;
+  text-align:center;
+  align-self: start;         /* <<< topo */
+  display: grid;
+  place-items: center;     /* em vez de start */
+}
+.rowTime{
+  display:grid;
+  place-items:center;       /* centraliza o texto dentro do pill */
+  background:#0b1220;
+  border:1px solid #1f2937;
+  border-radius:8px;
+  padding:6px 4px;
+  font-weight:700;
+  color:#fde68a;
+  align-self: start;         /* <<< topo */
+}
+
+/* ====== BLOCO DE PÁGINAS (grid) ====== */
+.blocks{
+  /* props vindas do JSX: --cols (=ppc) e --rows (fileiras necessárias) */
+  width: calc(var(--cols) * (var(--block) + var(--gap)) - var(--gap));
+  min-height: calc(var(--rows) * var(--block) + max(0, var(--rows) - 1) * var(--gap));
+  margin: 0 auto;
+
+  display: grid;
+  grid-template-columns: repeat(var(--cols), var(--block));
+  grid-auto-rows: var(--block);
+  gap: var(--gap);
+
+  justify-items: start;
+  align-items: start;
+}
+
+.blocksEmpty{
+  display:none;
+}
+
+/* quadradinhos */
+.block{
+  width: var(--block);
+  height: var(--block);
+  border-radius: 6px;
+  background: var(--cell-bg);
+  border:1px solid var(--cell-bd);
+}
+.blockDone{
+  background: var(--cell-done-bg);
+  border-color: var(--cell-done-bd);
+  box-shadow: inset 0 0 0 1px var(--cell-done-glow);
+}
+
+@keyframes popIn{
+  0%{ transform: scale(.92); opacity:.6; }
+  100%{ transform: scale(1); opacity:1; }
+}
 
 .section[aria-label="Progresso"]{ overflow: visible; }
 
 .stickyTop{
   top: calc(env(safe-area-inset-top, 0px) + 0px);
 }
+
+/* Dock inferior: fica colado ao fundo da viewport até o fim do conteúdo */
+.actionsDock{
+  position: sticky;
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px)); /* altura do “respiro” */
+  z-index: 200;                     /* acima do conteúdo; abaixo do overlay(2000) */
+  pointer-events: none;            /* deixa cliques irem só pros filhos */
+}
+

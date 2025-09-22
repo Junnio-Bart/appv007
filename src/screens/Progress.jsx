@@ -648,10 +648,25 @@ const addCycle   = () => setPagesToday(p => p + Math.max(0, localPpc));
               const cells = (localGoal > 0) ? Math.min(ppcView, remainingForGoal) : ppcView;
               const doneHere = (localGoal > 0) ? Math.max(0, Math.min(todayLocal - start, cells)) : 0;
 
+              const cols = Math.max(1, ppcView);
+              const rowsNeeded = Math.max(1, Math.ceil(cells / cols));
+              const hasWrap = rowsNeeded > 1;
+              const isEmpty = cells === 0;
+
               return (
-                <div key={r} className={s.row} role="row">
+                <div
+                  key={r}
+                  className={`${s.row} ${hasWrap ? s.hasWrap : ""} ${isEmpty ? s.rowEmpty : ""}`}
+                  role="row"
+                >
                   <div className={s.rowIdx}>{r + 1}</div>
-                  <div className={s.blocks} role="gridcell" aria-label={`Linha ${r + 1}`}>
+
+                  <div
+                    className={`${s.blocks} ${isEmpty ? s.blocksEmpty : ""}`}
+                    style={{ '--cols': cols, '--rows': rowsNeeded }}
+                    role="gridcell"
+                    aria-label={`Linha ${r + 1}`}
+                  >
                     {Array.from({ length: cells }).map((__, i) => {
                       const filled = i < doneHere;
                       return (
@@ -663,6 +678,7 @@ const addCycle   = () => setPagesToday(p => p + Math.max(0, localPpc));
                       );
                     })}
                   </div>
+
                   <div className={s.rowTime}>{Math.max(1, Number(localInterval || 0))}m</div>
                 </div>
               );
@@ -671,52 +687,54 @@ const addCycle   = () => setPagesToday(p => p + Math.max(0, localPpc));
         );
       })()}
 
+
       {/* ===== Painel de Ações ===== */}
-      <div className={s.actionsPanel}>
-        {/* primeira linha: 3 botões (mesma forma) */}
-        <div className={s.actionsRow}>
-          <button 
+      <div className={s.actionsDock}>
+        <div className={s.actionsPanel}>
+          {/* primeira linha: 3 botões (mesma forma) */}
+          <div className={s.actionsRow}>
+            <button 
+                type="button"
+                className={`${s.actBtn} ${s.triBtn} ${s.actGreen}`}
+                onClick={() => incPage(+1)}
+            >
+              + 1 pág
+              </button>
+
+            <button
               type="button"
-              className={`${s.actBtn} ${s.triBtn} ${s.actGreen}`}
-              onClick={() => incPage(+1)}
-          >
-            + 1 pág
+              className={`${s.actBtn} ${s.triBtn} ${s.actBlue}`}
+              onClick={() => setPagesToday(p => p + Math.max(0, localPpc))}
+            >
+              + 1 ciclo
             </button>
-
-          <button
-            type="button"
-            className={`${s.actBtn} ${s.triBtn} ${s.actBlue}`}
-            onClick={() => setPagesToday(p => p + Math.max(0, localPpc))}
-          >
-            + 1 ciclo
-          </button>
-          <button 
-            type="button" 
-            className={`${s.actBtn} ${s.triBtn} ${s.actGreen}`}
-            onClick={() => incPage(-1)}
-          >
-            - 1 pág
-          </button>
+            <button 
+              type="button" 
+              className={`${s.actBtn} ${s.triBtn} ${s.actGreen}`}
+              onClick={() => incPage(-1)}
+            >
+              - 1 pág
+            </button>
+          </div>
+          {/* segunda linha: 2 botões largos (mesma forma) */}
+          <div className={s.actionsRowWide}>
+            <button
+              type="button"
+              className={`${s.actBtn} ${s.wideBtn} ${s.actYellow}`}
+              onClick={commitDayRead}
+            >
+              Gravar dia
+            </button>
+            <button
+              type="button"
+              className={`${s.actBtn} ${s.wideBtn} ${s.actRed}`}
+              onClick={clearToday}
+            >
+              Limpar tudo
+            </button>
+          </div>
         </div>
-         {/* segunda linha: 2 botões largos (mesma forma) */}
-        <div className={s.actionsRowWide}>
-          <button
-            type="button"
-            className={`${s.actBtn} ${s.wideBtn} ${s.actYellow}`}
-            onClick={commitDayRead}
-          >
-            Gravar dia
-          </button>
-
-          <button
-            type="button"
-            className={`${s.actBtn} ${s.wideBtn} ${s.actRed}`}
-            onClick={clearToday}
-          >
-            Limpar tudo
-          </button>
-        </div>
-      </div>
+      </div> 
 
       <div style={{textAlign:'center', marginTop:10, opacity:.9}}>
         <small style={{display:'block'}}>Lidas hoje</small>
