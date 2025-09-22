@@ -219,3 +219,17 @@ html, body { height: 100%; overscroll-behavior: none; }
   padding: 0 16px 16px;                        /* respiro nas bordas */
   overflow: hidden;                            /* evita scroll acidental */
 }
+
+/* Quando estiver na aba Progresso, o header (logo) NÃO é sticky */
+.app[data-tab="progress"] 
+.app-header{
+  position: static;     /* era sticky */
+}
+
+/* Progresso: a logo rola junto, não é sticky */
+.app[data-tab="progress"] .app-header{
+  position: static !important;
+  top: auto !important;
+  box-shadow: none;
+  background: var(--bg);
+}

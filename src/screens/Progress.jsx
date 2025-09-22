@@ -390,9 +390,18 @@ const addCycle   = () => setPagesToday(p => p + Math.max(0, localPpc));
   const [cycleOpen, setCycleOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(true); // abre fechado por padrão
 
+  // marca a aba atual no elemento raiz .app (usado pelo CSS global)
+  useEffect(() => {
+    const root = document.querySelector('.app');
+    if (root) root.setAttribute('data-tab', 'progress');
+    return () => root?.removeAttribute('data-tab');
+  }, []);
+
+
   /* ===================== JSX ===================== */
   return (
     <section aria-label="Progresso" className={`${s.wrap} ${editing ? s.isEditing : ""}`}>
+      <div className={s.stickyTop}>
       {/* topo */}
       <header className={`${s.top} ${menuOpen ? s.topRaise : ""}`}>
         <div className={s.titleWrap}>
@@ -438,8 +447,7 @@ const addCycle   = () => setPagesToday(p => p + Math.max(0, localPpc));
           </span>
         </div>
       </header>
-
-      {/* overlay: clicar fora confirma o que estiver editando */}
+      {/* O overlay continua fora; ele cobre tudo, a barra preta fica por cima */}
       {editing && (
         <div
           className={s.dim}
@@ -453,7 +461,6 @@ const addCycle   = () => setPagesToday(p => p + Math.max(0, localPpc));
           }}
         />
       )}
-
       {/* ===== BARRA PRETA — KNOBS c/ EXPANDIR/RECOLHER ===== */}
       <div className={`${s.knobBoard} ${collapsed ? s.isCollapsed : ""}`}>
         {/* botão do cantinho */}
@@ -627,14 +634,42 @@ const addCycle   = () => setPagesToday(p => p + Math.max(0, localPpc));
           </div>
         </div>
       </div>
+    </div>
+      {/* ===== Grade (páginas por ciclos) ===== */}
+      {(() => {
+        const ppcView = Math.max(1, Number.isFinite(localPpc) ? localPpc : 1);
+        const rows = Math.max(1, Math.ceil((localGoal || ppcView) / ppcView));
 
-      <div style={{textAlign:'center', marginTop:10, opacity:.9}}>
-        <small style={{display:'block'}}>Lidas hoje</small>
-        <strong style={{fontSize:20}}>
-          {todayLocal} / {localGoal}
-        </strong>
-      </div>
+        return (
+          <div className={s.grid} role="grid" aria-label="Grade de páginas do dia">
+            {Array.from({ length: rows }).map((_, r) => {
+              const start = r * ppcView;
+              const remainingForGoal = Math.max(0, (localGoal || 0) - start);
+              const cells = (localGoal > 0) ? Math.min(ppcView, remainingForGoal) : ppcView;
+              const doneHere = (localGoal > 0) ? Math.max(0, Math.min(todayLocal - start, cells)) : 0;
 
+              return (
+                <div key={r} className={s.row} role="row">
+                  <div className={s.rowIdx}>{r + 1}</div>
+                  <div className={s.blocks} role="gridcell" aria-label={`Linha ${r + 1}`}>
+                    {Array.from({ length: cells }).map((__, i) => {
+                      const filled = i < doneHere;
+                      return (
+                        <div
+                          key={i}
+                          className={`${s.block} ${filled ? s.blockDone : ""}`}
+                          aria-hidden={filled ? "false" : "true"}
+                        />
+                      );
+                    })}
+                  </div>
+                  <div className={s.rowTime}>{Math.max(1, Number(localInterval || 0))}m</div>
+                </div>
+              );
+            })}
+          </div>
+        );
+      })()}
 
       {/* ===== Painel de Ações ===== */}
       <div className={s.actionsPanel}>
@@ -682,6 +717,14 @@ const addCycle   = () => setPagesToday(p => p + Math.max(0, localPpc));
           </button>
         </div>
       </div>
+
+      <div style={{textAlign:'center', marginTop:10, opacity:.9}}>
+        <small style={{display:'block'}}>Lidas hoje</small>
+        <strong style={{fontSize:20}}>
+          {todayLocal} / {localGoal}
+        </strong>
+      </div>
+
      {/* Modais (ainda úteis para futuras funções) */}
      <GoalModal
      open={goalOpen}

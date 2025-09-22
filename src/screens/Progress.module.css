@@ -31,7 +31,7 @@
   row-gap:8px; 
   margin-bottom:10px; 
   position: relative; 
-  z-index: 1001;
+  z-index: 1;
 }
 
 .titleWrap{ position:relative; 
@@ -177,15 +177,6 @@
   --cell-done:   #12311f;
 }
 
-.grid{
-  background:#0b1a2a;
-  border:1px solid #1e293b;
-  border-radius:16px;
-  padding:12px;
-  display:grid;
-  gap:6px;
-  overflow:hidden;               /* evita “vazar” cantos */
-}
 
 .row{
   display:grid;
@@ -315,7 +306,7 @@
   padding:24px 24px 24px;
   box-shadow:0 10px 28px rgba(0,0,0,.25);
   margin:18px 0 8px;
-  z-index: 2000;
+  z-index: 3000;
   isolation: isolate; 
 }
 
@@ -518,10 +509,23 @@
 @keyframes kJump{ 0%{transform:translateY(0) scale(1);} 50%{transform:translateY(-3px) scale(1.04);} 100%{transform:translateY(0) scale(1);} }
 .jump{ animation:kJump .18s ease-out both; }
 
+
+/* Wrapper que gruda no topo durante a rolagem */
+.stickyTop{
+  position: sticky;
+  top: 0;                                /* gruda no topo da viewport */
+  z-index: 100;                          /* acima do conteúdo, abaixo do overlay */
+  background: var(--bg);                 /* mesma cor do app */
+  padding-top: 6px;
+  padding-bottom: 8px;
+  box-shadow: 0 8px 18px rgba(0,0,0,.18);/* leve sombra inferior ao rolar */
+}
+
 .wrap {
   position: relative;   /* mantém para posicionamentos internos */
   /* REMOVER o z-index para não criar stacking-context */
 }
+
 /* ===== Painel de ações (caixa) ===== */
 .actionsPanel{
   max-width: 720px;                /* <<< ajuste a largura máx do bloco */
@@ -554,7 +558,7 @@
   /* centralize todos os ajustes aqui */
   --tri-minw: 50px;    /* largura mínima */
   --tri-maxw: 80px;    /* largura máxima */
-  --tri-h:    55px;     /* altura */
+  --tri-h:    45px;     /* altura */
   --tri-r:    12px;     /* raio dos cantos */
 
   flex: 1 1 clamp(var(--tri-minw), 30vw, var(--tri-maxw));
@@ -567,7 +571,7 @@
 .wideBtn{
   --wide-minw: 60px;
   --wide-maxw: 80px;
-  --wide-h:    55px;
+  --wide-h:    45px;
   --wide-r:    12px;
 
   flex: 1 1 clamp(var(--wide-minw), 42vw, var(--wide-maxw));
@@ -581,7 +585,7 @@
   appearance: none;
   border: 0;
   font-weight: 800;
-  font-size: 15px;
+  font-size: 13px;
   line-height: 1;
   color: #0b1220;
   box-shadow: 0 6px 14px rgba(0,0,0,.25);
@@ -605,4 +609,50 @@
 .topRaise {
   position: relative;
   z-index: 6000;  /* > knobBoard(3000) e > overlay(2000) */
+}
+
+/* ===== CONTÊINER DA GRADE (com scroll moderno) ===== */
+.gridScroll{
+  max-height: min(52vh, 480px);
+  overflow: auto;
+  padding: 14px 10px;
+  border: 1px solid #1e293b;
+  border-radius: 16px;
+  background: #0b1224;           /* bem próximo do fundo */
+  box-shadow: inset 0 10px 24px rgba(0,0,0,.18);
+  scrollbar-gutter: stable;       /* evita pular conteúdo quando aparece a barra */
+}
+
+/* WebKit */
+.gridScroll::-webkit-scrollbar{ width: 10px; }
+.gridScroll::-webkit-scrollbar-track{ background: transparent; }
+.gridScroll::-webkit-scrollbar-thumb{
+  background: #1f2a3e;
+  border: 2px solid #0b1224;
+  border-radius: 12px;
+}
+.gridScroll::-webkit-scrollbar-thumb:hover{ background: #25344c; }
+
+/* Firefox */
+.gridScroll{ scrollbar-width: thin; scrollbar-color: #1f2a3e transparent; }
+
+/* grade em si (já existia; só garanta que está assim) */
+.grid{
+  background:#0b1a2a;
+  border:1px solid #1e293b;
+  border-radius:16px;
+  padding:12px;
+  display:grid;
+  gap:1px;
+  overflow:hidden;
+  position: relative; 
+  z-index: 0; }
+
+/* linhas/células — você já tem estes estilos;
+   deixo aqui só para referência de que a grade usa .row, .rowIdx, .blocks, .block, .blockDone, .rowTime */
+
+.section[aria-label="Progresso"]{ overflow: visible; }
+
+.stickyTop{
+  top: calc(env(safe-area-inset-top, 0px) + 0px);
 }
