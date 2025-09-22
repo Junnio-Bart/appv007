@@ -639,6 +639,9 @@ const addCycle   = () => setPagesToday(p => p + Math.max(0, localPpc));
       {(() => {
         const ppcView = Math.max(1, Number.isFinite(localPpc) ? localPpc : 1);
         const rows = Math.max(1, Math.ceil((localGoal || ppcView) / ppcView));
+        
+      // limite visual de colunas — ajuste à vontade (6, 8, 10…
+        const MAX_COLS = 6
 
         return (
           <div className={s.grid} role="grid" aria-label="Grade de páginas do dia">
@@ -646,11 +649,11 @@ const addCycle   = () => setPagesToday(p => p + Math.max(0, localPpc));
               const start = r * ppcView;
               const remainingForGoal = Math.max(0, (localGoal || 0) - start);
               const cells = (localGoal > 0) ? Math.min(ppcView, remainingForGoal) : ppcView;
-              const doneHere = (localGoal > 0) ? Math.max(0, Math.min(todayLocal - start, cells)) : 0;
 
-              const cols = Math.max(1, ppcView);
+              const cols = Math.min(Math.max(1, ppcView), MAX_COLS);
               const rowsNeeded = Math.max(1, Math.ceil(cells / cols));
               const hasWrap = rowsNeeded > 1;
+              const doneHere = (localGoal > 0) ? Math.max(0, Math.min(todayLocal - start, cells)) : 0;
               const isEmpty = cells === 0;
 
               return (
@@ -673,7 +676,7 @@ const addCycle   = () => setPagesToday(p => p + Math.max(0, localPpc));
                         <div
                           key={i}
                           className={`${s.block} ${filled ? s.blockDone : ""}`}
-                          aria-hidden={filled ? "false" : "true"}
+
                         />
                       );
                     })}

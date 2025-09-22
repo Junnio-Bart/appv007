@@ -638,16 +638,13 @@
 
 /* ====== BLOCO DE PÁGINAS (grid) ====== */
 .blocks{
-  /* props vindas do JSX: --cols (=ppc) e --rows (fileiras necessárias) */
   width: calc(var(--cols) * (var(--block) + var(--gap)) - var(--gap));
   min-height: calc(var(--rows) * var(--block) + max(0, var(--rows) - 1) * var(--gap));
   margin: 0 auto;
-
   display: grid;
   grid-template-columns: repeat(var(--cols), var(--block));
   grid-auto-rows: var(--block);
   gap: var(--gap);
-
   justify-items: start;
   align-items: start;
 }
