@@ -434,12 +434,13 @@
 /* Wrapper que gruda no topo durante a rolagem */
 .stickyTop{
   position: sticky;
-  top: 0;                                /* gruda no topo da viewport */
+  top: calc(env(safe-area-inset-top, 0px) + 22px);                               /* gruda no topo da viewport */
   z-index: 100;                          /* acima do conteúdo, abaixo do overlay */
   background: var(--bg);                 /* mesma cor do app */
   padding-top: 6px;
   padding-bottom: 8px;
   box-shadow: 0 8px 18px rgba(0,0,0,.18);/* leve sombra inferior ao rolar */
+  
 }
 
 .wrap {
@@ -560,14 +561,14 @@
   --gap:   4px;                          /* espaço entre quadradinhos    */
 
   /* larguras dos “pills” laterais (mais estreitos) */
-  --idx-w: 60px;                         /* número do ciclo (70→52)   */
+  --idx-w: 57px;                         /* número do ciclo (70→52)   */
   --time-w: 60px;                        /* tempo do ciclo (70→58)    */
 }
 
 .gridScroll{
   max-height: min(52vh, 480px);
   overflow: auto;
-  padding: 14px 10px;
+  padding: 14px 14px;
   border: 1px solid #1e293b;
   border-radius: 16px;
   background: #0b1224;
@@ -583,13 +584,18 @@
 .gridScroll::-webkit-scrollbar-thumb:hover{ background: #25344c; }
 .gridScroll{ scrollbar-width: thin; scrollbar-color: #1f2a3e transparent; }
 
+@supports not (scrollbar-gutter: stable) {
+  .gridScroll{ padding-right: 22px; } /* ajuste fino se necessário (20–24) */
+}
 
 /* ===== GRADE ===== */
 .grid{
+  --gap:   4px;   /* antes 4px */
+  --block: 25px;
   background:#0b1a2a;
   border:1px solid #1e293b;
   border-radius:16px;
-  padding:12px;
+  padding:12px 12px;
   display:grid;
   gap:2px;                     /* pode manter 6px entre linhas */
   overflow:hidden;
@@ -674,9 +680,7 @@
 
 .section[aria-label="Progresso"]{ overflow: visible; }
 
-.stickyTop{
-  top: calc(env(safe-area-inset-top, 0px) + 0px);
-}
+
 
 /* Dock inferior: fica colado ao fundo da viewport até o fim do conteúdo */
 .actionsDock{
