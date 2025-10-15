@@ -1,0 +1,110 @@
+.backdrop{ 
+  position:fixed; 
+  inset:0; 
+  background:rgba(0,0,0,.5); 
+  backdrop-filter:blur(2px); 
+  z-index:9998; 
+}
+.modal{ 
+  position:fixed; 
+  left:50%; 
+  top:50%; 
+  transform:translate(-50%,-50%); 
+  width:min(92vw,560px);
+  background:#0f172a; 
+  border:1px solid #22314d; 
+  border-radius:16px; 
+  box-shadow:0 20px 60px rgba(0,0,0,.45); 
+  z-index:9999; 
+  padding: 15px 24px 20px; /* 🔹 aumenta padding superior */
+}
+.modal h3 {
+  font-family: inherit;
+  margin: 0 0 12px;        /* 🔹 espaçamento abaixo do título */
+  font-size: 24px;         /* 🔹 tamanho do título */
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.2;
+  
+}
+.meta{ 
+  opacity:.85; 
+  margin:4px 0 8px; 
+}
+.rateRow{ display:flex; 
+  align-items:center; 
+  gap:6px; 
+  margin:6px 0 12px; 
+}
+.star{
+  font-size: 30px;
+  background: transparent;
+  border: 0;
+  color: var(--star-empty, rgba(255,255,255,.35));
+  cursor: pointer;
+}
+.star.filled{
+  color: var(--star-filled, #FFD76A);
+}
+/* espaçamento das estrelas e legenda */
+.rateWrap{
+  display: flex;
+  flex-direction: column;
+  gap: 2px;              /* espaço entre linha de estrelas e a legenda */
+  margin: 6px 0 10px;
+}
+.starsRow{
+  display: flex;
+  align-items: center;
+  gap: 1px;            /* 🔹 espaço entre as estrelas */
+}
+.caption {
+  font-size: .95rem;
+  color: rgba(255,255,255,.85);
+  min-height: 1.3em;     /* 🔹 reserva o espaço mesmo sem texto */
+  text-align: left;      /* mantém alinhamento */
+}
+.rateLabel{ 
+  opacity:.75; 
+  margin-left:4px; 
+  min-width:40px; 
+}
+.note{
+  width: 100%;
+  resize: vertical;
+  background: #0b1326;
+  border: 1px solid #22314d;
+  color: #fff;
+  border-radius: 12px;
+  padding: 10px;
+  font-family: inherit;    /* 🔹 herda a fonte global do app */
+  font-size: 1rem;         /* acompanha o restante da UI */
+  line-height: 1.35;
+}
+.actions{ 
+  display:flex; 
+  justify-content:flex-end; 
+  gap:10px; 
+  margin-top:14px; 
+}
+.btnGhost{ 
+  background:#0b1326; 
+  border:1px solid #22314d; 
+  color:#fff; 
+  border-radius:10px; 
+  padding:8px 12px; 
+}
+.btnPrimary{ 
+  background:#1761d0; 
+  border:1px solid #1a4f9c; 
+  color:#fff; 
+  border-radius:10px; 
+  padding:8px 14px; 
+  font-weight:700; 
+}
+
+/* usa variáveis p/ ficar fácil de trocar via tema */
+:root{
+  --star-empty: rgba(255,255,255,.35);  /* cor quando NÃO selecionada */
+  --star-filled: #FFD76A;               /* cor quando selecionada (dourado) */
+}

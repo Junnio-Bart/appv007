@@ -58,6 +58,7 @@ p { font-size: var(--fs-body); color: var(--muted); margin:0 }
   height: var(--header-h, 96px);
   padding-top: max(8px, env(safe-area-inset-top)); 
   padding-bottom: 6px;
+  transition: height .18s ease, padding .18s ease, margin .18s ease, transform .18s ease, opacity .18s ease;
 }
 
 /* Botão do logo */
@@ -240,3 +241,121 @@ html, body { height: 100%; overscroll-behavior: none; }
   padding-bottom: calc(76px + env(safe-area-inset-bottom));  /* ajuste 48–64px se quiser */
 }
 
+/* animação suave do header em qualquer aba */
+.app-header{
+  transition: height .18s ease, padding .18s ease, margin .18s ease,
+              transform .18s ease, opacity .18s ease;
+}
+
+/* JOURNAL: quando a barra compacta ligar, “sobe” o header + zera o espaço */
+body.journal-compact .app-header{
+  height: 0;
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
+  transform: translateY(-12px);
+  opacity: 0;
+  box-shadow: none;
+}
+
+/* (opcional) já temos: esconder só a imagem da logo.
+   Mantém também, mas agora o header inteiro some. */
+body.journal-compact #appLogo{
+  opacity: 0;
+  transform: translateY(-12px);
+  height: 0;
+  margin: 0;
+  pointer-events: none;
+}
+
+/* No Journal, o header NÃO é fixo: rola junto com a página */
+body[data-tab="journal"] .app-header{
+  position: static !important;   /* em vez de fixed/sticky */
+  top: auto !important;
+  inset: auto !important;
+  transform: none !important;
+  opacity: 1 !important;
+  height: auto !important;
+  padding: var(--header-pad, 12px 0);  /* ajuste se quiser */
+  box-shadow: none;
+  z-index: auto;
+}
+
+/* Se você usa um “spacer” para compensar o header fixo, some com ele no Journal */
+body[data-tab="journal"] .header-spacer{
+  display: none !important;
+}
+
+/* Se o conteúdo tinha padding-top por causa do header fixo, remova só no Journal */
+body[data-tab="journal"] .app-main,
+body[data-tab="journal"] .app-content{
+  padding-top: 0 !important;
+}
+
+/* JOURNAL: o topo NÃO é fixo — rola junto com a página */
+.app[data-tab="journal"] .app-header,
+.app[data-tab="journal"] header.app-header,
+.app[data-tab="journal"] header,
+.app[data-tab="journal"] .header,
+.app[data-tab="journal"] .Header,
+.app[data-tab="journal"] .topbar,
+.app[data-tab="journal"] .Topbar,
+.app[data-tab="journal"] #appLogo {
+  position: static !important;
+  top: auto !important;
+  bottom: auto !important;
+  inset: auto !important;
+  transform: none !important;
+  will-change: auto !important;
+  z-index: auto !important;
+  opacity: 1 !important;
+  box-shadow: none !important;
+}
+
+/* Se existir um "spacer" que compensa header fixo, esconda no Journal */
+.app[data-tab="journal"] .header-spacer,
+.app[data-tab="journal"] .app-header-spacer{
+  display: none !important;
+}
+
+/* Se o conteúdo tinha padding-top por causa do header fixo, zera aqui */
+.app[data-tab="journal"] .app-main,
+.app[data-tab="journal"] .app-content,
+.app[data-tab="journal"] main{
+  padding-top: 0 !important;
+}
+
+:root{
+  --sb-track: #0b1326;     /* trilho */
+  --sb-thumb: #2a3b5f;     /* polegar */
+  --sb-thumb-hover: #3a5586;
+  --sb-corner: #0b1326;
+  --sb-width: 10px;        /* largura padrão */
+}
+
+/* WebKit (Chrome/Edge/Safari) */
+*::-webkit-scrollbar{
+  width: var(--sb-width);
+  height: var(--sb-width);
+}
+*::-webkit-scrollbar-track{
+  background: var(--sb-track);
+  border-radius: 12px;
+}
+*::-webkit-scrollbar-thumb{
+  background: var(--sb-thumb);
+  border-radius: 12px;
+  border: 2px solid var(--sb-track);  /* cria “miolo” clean */
+}
+*::-webkit-scrollbar-thumb:hover{
+  background: var(--sb-thumb-hover);
+}
+*::-webkit-scrollbar-corner{
+  background: var(--sb-corner);
+}
+
+/* Firefox */
+*{
+  scrollbar-width: thin;                         /* thin | auto | none */
+  scrollbar-color: var(--sb-thumb) var(--sb-track);
+}

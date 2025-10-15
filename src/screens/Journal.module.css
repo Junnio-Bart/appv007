@@ -1,0 +1,308 @@
+/* Empurra TUDO para baixo quando estiver na aba Diário */
+:global(.app[data-tab="journal"]) {
+  padding-top: calc(env(safe-area-inset-top) + 12px); /* ajuste 18px à vontade */
+}
+
+
+.page{
+  padding: 2px 12px 12px;   /* remove o “gap gigante” da foto 1 */
+}
+
+/* ===== Calendário sticky ===== */
+.calStick{
+  position: sticky;
+  top: var(--cal-stick-top, 8px);
+  z-index: var(--cal-stick-z, 180);
+  margin-bottom: 10px;
+}
+
+/* ---- Variáveis do grip aplicadas ao box do calendário ---- */
+.calBox{
+  /* raio do calendário (combine com o border-radius do box) */
+  --r: 12px;
+
+  /* ângulo e dimensões das listras */
+  --g-angle: 145deg;
+  --g-c1: 14px;
+  --g-c2: 8px;
+  --g-th: 2px;
+  --g-col: #cbd5e1;
+
+  /* “entrada” pra dentro do canto (aproxima/afasta das bordas) */
+  --g-inset-x: 6px;
+  --g-inset-y: 1px;
+
+  position: relative; /* já tinha, só reforçando */
+  overflow: visible;
+}
+
+/* HIT-AREA já grande */
+.cornerToggle{
+  position:absolute;
+  right: var(--g-inset-x);
+  bottom: var(--g-inset-y);
+  width:30px; height:30px;
+  background:transparent; cursor:pointer; z-index:7000;
+  border:0;
+}
+
+/* linha de metas dentro do calendário (já tem no seu arquivo) */
+.calGoalsRow{
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  align-items: stretch;
+  margin: 4px 12px;
+  flex-wrap: wrap;
+}
+
+/* knob do canto (mesma vibe do Progress) */
+.calKnob{
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  width: 26px;
+  height: 26px;
+  border-radius: 10px;
+  border: 1px solid #22314d;
+  background: rgba(17,23,34,.75);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+  box-shadow: 0 2px 10px rgba(0,0,0,.25);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.calKnob:is(:hover,:focus-visible){ outline: 0; filter: brightness(1.06); }
+
+/* ===== ÍCONE (duas linhas) – com variáveis para ajustar tudo ===== */
+.cornerIcon{
+  position:absolute; right:6px; bottom:6px;
+  width:18px; height:18px; pointer-events:none;
+
+  /* ângulo */
+  --deg: -45deg;
+
+  /* linha A (a “de dentro”) */
+  --a-w: 13px;    /* comprimento */
+  --a-tx: 10px;   /* desloc. X */
+  --a-ty: 5px;    /* desloc. Y */
+  --a-th: 2px;    /* espessura */
+  --a-color: #cbd5e1;
+  --a-op: 0.95;
+
+  /* linha B (a “de fora”) */
+  --b-w: 7px;
+  --b-tx: 7px;
+  --b-ty: 9px;
+  --b-th: 2px;
+  --b-color: #cbd5e1;
+  --b-op: 0.85;
+}
+.cornerIcon::before,
+.cornerIcon::after{
+  content:"";
+  position:absolute; right:0; bottom:0;
+  transform-origin: right bottom;
+  border-radius:2px;
+}
+
+/* linha A */
+.cornerIcon::after{
+  width: var(--a-w);
+  height: var(--a-th);
+  background: var(--a-color);
+  opacity: var(--a-op);
+  transform: rotate(var(--deg)) translate(var(--a-tx), var(--a-ty));
+  right:8px; bottom:6px;
+}
+
+/* linha B */
+.cornerIcon::before{
+  width: var(--b-w);
+  height: var(--b-th);
+  background: var(--b-color);
+  opacity: var(--b-op);
+  transform: rotate(var(--deg)) translate(var(--b-tx), var(--b-ty));
+  right:7px; bottom:5px;
+}
+
+
+/* feedback opcional */
+.cornerToggle:hover .cornerIcon::before,
+.cornerToggle:hover .cornerIcon::after{
+  filter: brightness(1.3);
+  margin-bottom: 1px;
+}
+
+
+.isCollapsed.calKnob::before{ transform: rotate(225deg); } /* vira o “v” ao colapsar */
+
+/* “faixa” por trás do calendário, com blur e borda, igual Progress */
+.calStickyInner{
+  background: var(--cal-stick-bg, rgba(11,18,32,.72));
+  -webkit-backdrop-filter: blur(var(--cal-stick-blur, 3px));
+  backdrop-filter: blur(var(--cal-stick-blur, 3px));
+  border: 1px solid #22314d;
+  border-radius: 12px;
+  padding: var(--cal-stick-pad, 6px 8px);
+}
+
+/* linha da logo */
+.logoRow{
+  display:flex;
+  justify-content:center;
+  margin: var(--logo-gap-top, 14px) 0 10px;        /* encosta o calendário na logo */
+  transition: opacity .16s, transform .16s, height .16s, margin .16s;
+}
+.logo{ margin:0; font-size: 48px; font-weight: 900; letter-spacing: 2px; }
+
+/* quando compacta: some a logo (não cobre a barra) */
+.compact .logoRow{
+  opacity: 0;
+  transform: translateY(-12px);
+  height: 0;
+  margin: 0;
+  pointer-events: none;
+}
+
+.goalsRow{
+  display:flex;
+  gap: 10px;
+  margin: 4px 0 12px;
+  flex-wrap: wrap;
+}
+
+.calGoalsRow{
+  --goal-gap: 10px;
+  display: flex;
+  gap: var(--goal-gap);
+  justify-content: center;
+  align-items: stretch;
+  flex-wrap: wrap;                  /* pode quebrar se ficar MUITO estreito */
+  width: 100%;
+  max-width: 100%;
+}
+
+/* Regra responsiva: cada badge ocupa o menor entre a largura desejada e 1/2 do box */
+.calGoalsRow :global(.badge){
+  width: min(var(--gb-cal-w, 140px), calc((100% - var(--goal-gap)) / 2));
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+/* opcional: em telas bem pequenas, empilha um embaixo do outro */
+@media (max-width: 340px){
+  .calGoalsRow :global(.badge){ width: 100%; }
+}
+
+/* quando o calendário está fechado/compacto */
+.calCollapsed{
+  /* setas coladas no mês */
+  --mini-track-gap: 2px;
+  --mini-arrow-hit: 18px;
+  --mini-arrow-size: 7px;
+
+  /* garante espaço pro chip do mês */
+  --mini-track-min: 70px;   /* aumente/diminua conforme a largura do chip */
+
+  /* gap entre ANO • HOJE • MÊS  */
+  --mini-pad-x: 14px;
+  --mini-gap: 5px;  
+
+  /* chip “Hoje” curtinho: 29 – s */
+  --mini-today-size: 16px;
+  --mini-today-px: 12px;
+  --mini-today-py: 15px;
+  --mini-today-nudge: 6px;
+
+  /* badge “Livros no mês” menor */
+  --mini-badge-w: 100px;     /* <- altere aqui a LARGURA */
+  --mini-badge-h: 44px;      /* <- e aqui a ALTURA */
+
+  /* respiro nas laterais do cabeçalho compacto */
+  --mini-sides: 10px;           /* ↑ aumenta para criar mais espaço vazio */
+  --mini-edge-right: 4px;       /* espaço extra à direita do ANO (opcional) */
+  --mini-edge-left:  4px;       /* espaço extra à esquerda do trilho (opcional) */
+
+  /* largura do chip central do mês, se precisar */
+  --mini-chip-w: 64px;
+  
+}
+
+/* ===== BOX DE METAS (separado) ===== */
+.goalsPanel{
+  background: #0b1220;
+  border: 1px solid #22314d;
+  border-radius: 12px;
+  padding: 12px 10px;
+  margin: 15px 0 15px;
+}
+
+.goalsRow{
+  --goal-gap: 25px;
+  display: flex;
+  gap: var(--goal-gap);
+  justify-content: center;
+  align-items: stretch;
+  flex-wrap: wrap;
+}
+
+.goalsRow :global(.badge){
+  width: min(var(--gb-cal-w, 140px), calc((100% - var(--goal-gap)) / 2));
+  min-width: 0;
+  box-sizing: border-box;
+}
+@media (max-width: 340px){
+  .goalsRow :global(.badge){ width:100%; }
+}
+
+/* Calendário grudado no topo */
+.calStick{
+  position: sticky;
+  top: var(--cal-stick-top, 12px);   /* ↑ um pouco mais de respiro */
+  z-index: 250;                      /* acima do conteúdo */
+  margin-bottom: 10px;
+  /* importante: vira um stacking context p/ as pseudo-layers */
+  isolation: isolate;
+}
+
+/* Tampa opaca entre o topo da viewport e o box do calendário */
+.calStick::before{
+  content:"";
+  position:absolute;
+  left: 0; right: 0;
+  /* cobre do topo da viewport até o início do box */
+  top: calc(-1 * var(--cal-stick-top, 12px) - 10px);
+  height: calc(var(--cal-stick-top, 12px) + 25px);
+  background: var(--app-bg, #0f172a);   /* mesma cor do fundo da página */
+  z-index: 0;                            /* atrás do box, mas à frente do resto */
+  pointer-events: none;
+}
+
+/* Sombra/fade na base do calendário */
+.calStick::after{
+  content:"";
+  position:absolute;
+  left: 12px; right: 12px;
+  bottom: -6px;
+  height: 18px;
+  background: linear-gradient(to bottom, rgba(0,0,0,.35), rgba(0,0,0,0));
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* em qualquer lugar do seu CSS global */
+:root { --cal-stick-top: 14px; }
+
+/* micro “afundada” quando fica compacto */
+.calCollapsed .calBox{
+    /* mantenha só um destaque sutil se quiser */
+    box-shadow: 0 10px 22px rgba(0,0,0,.35);
+  }
+
+.calStick::before,
+.calStick::after{
+  pointer-events: none; /* importantíssimo */
+}

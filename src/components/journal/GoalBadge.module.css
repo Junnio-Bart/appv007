@@ -1,0 +1,137 @@
+/* Raiz do badge: tudo vira variável */
+.badge{
+  /* defaults (podem ser sobrescritos pelo parent) */
+  --gb-w: 160px;
+  --gb-h: 60px;
+  --gb-pad-x: 14px;
+  --gb-pad-y: 8px;
+  --gb-value-size: 22px;
+  --gb-label-size: 12px;
+
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+
+  width: var(--gb-w);
+  height: var(--gb-h);
+  min-width: 0;
+  padding: var(--gb-pad-y) var(--gb-pad-x);
+
+  border-radius: 12px;
+  border: 1px solid #334155;
+  background: #0f172a;
+  color: #e5e7eb;
+  gap: 6px;
+  box-sizing: border-box;
+}
+.badge:focus{ outline:none; box-shadow:0 0 0 2px #1d4ed8; }
+
+/* tons por % da meta */
+.neutral{ border-color:#334155; }
+.bad{    border-color:#7f1d1d; background:#111827; }
+.warn{   border-color:#92400e; }
+.good{   border-color:#075985; }
+.done{   border-color:#14532d; background:#0b1f16; }
+
+/* modo completo (antigo) */
+.row{ display:grid; gap:2px; }
+
+.value{ font-weight: 900; font-size: var(--gb-value-size); line-height:1; }
+.label{ font-size: var(--gb-label-size); opacity:.85; line-height:1; }
+
+.sep{ font-size:12px; opacity:.75; margin-left:4px; }
+
+.bar{ height:8px; border:1px solid #22314d; border-radius:999px; overflow:hidden; background:#0b1220; }
+.bar>span{ display:block; height:100%; background:linear-gradient(90deg,#3b82f6,#22c55e); width:0; }
+
+
+/* ===== MODO CALENDÁRIO (referência) ===== */
+.badge{ box-sizing: border-box; }
+
+.cal{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+
+  /* knobs padrão (podem ser trocados via style no JSX) */
+  --gb-w: var(--gb-cal-w, 130px);
+  --gb-h: var(--gb-cal-h, 64px);
+
+  /* NÃO force !important aqui — o container vai ajustar a width */
+  width: var(--gb-w);
+  min-width: 0;
+  max-width: 100%;
+  padding: 10px 12px;
+}
+
+/* só número grande + legenda menor */
+.calValue{
+  font-size: 22px;
+  font-weight: 900;
+  line-height: 1;
+}
+.calLabel{
+  font-size: 12px;
+  opacity: .80;
+}
+
+/* esconde a barrinha quando estamos no modo calendário */
+.cal .bar{ display:none; }
+
+/* ===== tons sólidos para o modo calendário ===== */
+.calGray{
+  background: #0f172a;         /* cinza escuro */
+  border-color: #334155;
+  color: #e5e7eb;
+}
+.calRed{
+  background: #ef4444;         /* vermelho 500 */
+  border-color: #ef4444;
+  color: #fff;
+}
+.calYellow{
+  background: #f59e0b;         /* amber 500 */
+  border-color: #f59e0b;
+  color: #0b1320;              /* texto escuro para contraste */
+}
+.calGreen{
+  background: #22c55e;         /* verde 500 */
+  border-color: #22c55e;
+  color: #fff;
+}
+.calBlue{
+  background: #3b82f6;         /* azul 500 */
+  border-color: #3b82f6;
+  color: #fff;
+}
+
+/* transição suave quando a cor muda (opcional) */
+.cal, .calGray, .calRed, .calYellow, .calGreen, .calBlue{
+  transition: background-color .15s ease, border-color .15s ease, color .15s ease;
+}
+
+/* (mantém seus estilos/cores atuais do variant) */
+.v_calendar{ background:#0e1626; border-color:#2b3c5e; }
+
+/* tamanho mini – usado no calendário FECHADO */
+.sz_mini{
+  --gb-w: 100px;        /* largura padrão do mini */
+  --gb-h: 44px;         /* altura padrão do mini  */
+  --gb-value-size: 18px;
+  --gb-label-size: 11px;
+  --gb-pad-y: 6px;
+  --gb-pad-x: 10px;
+}
+
+/* se quiser garantir que o mini ganhe do .cal, aumenta a especificidade: */
+.cal.sz_mini{
+  --gb-w: 100px;
+  --gb-h: 44px;
+  --gb-value-size: 18px;
+  --gb-label-size: 11px;
+  --gb-pad-y: 6px;
+  --gb-pad-x: 10px;
+}

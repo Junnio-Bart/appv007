@@ -1,10 +1,10 @@
-// src/screens/Library.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
 import useLibrary from "../hooks/useLibrary.js";
 import NewBookModal from "../components/NewBookModal.jsx";
 import EditPagesModal from "../components/EditPagesModal.jsx";
 import ModalMount from "../components/ModalMount.jsx";
 import s from "./Library.module.css";
+
 
 // ==== helpers de reidratação (mesmos do Progress) ====
 const makeKey = (book) => `book-settings:${book?.id || book?.title || "unknown"}`;
@@ -90,8 +90,7 @@ export default function Library({ onGoProgress }) {
   function handleCenterClick() {
     if (current?.isNew) setShowNewBook(true);
     else {
-      setActiveId(current.id);
-      onGoProgress?.();
+      if (typeof onGoProgress === "function") onGoProgress();
     }
   }
 
@@ -107,6 +106,7 @@ export default function Library({ onGoProgress }) {
       if (it && !it.isNew) setActiveId(it.id);
     }
   }
+
 
   // ---------- swipe/drag unificado (pointer) ----------
   const viewportRef = useRef(null);
@@ -293,7 +293,7 @@ export default function Library({ onGoProgress }) {
               aria-label="Editar páginas lidas/total"
               title="Editar páginas lidas/total"
             >
-              {read} / {total}
+              {total} / {read}
             </button>
           </>
         )}

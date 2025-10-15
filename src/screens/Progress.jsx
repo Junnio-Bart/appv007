@@ -5,6 +5,9 @@ import useLibrary from "../hooks/useLibrary";
 import s from "./Progress.module.css";
 import CycleSettingsModal from "../components/CycleSettingsModal";
 import GoalModal from "../components/GoalModal";
+import SmartNumberInput from "../components/SmartNumberInput";
+import DayLogModal from "../components/DayLogModal";
+import SavedNotice from "../components/SavedNotice";
 
 /* ===================== Utils ===================== */
 const num   = (v, d=0) => (Number.isFinite(Number(v)) ? Number(v) : d);
@@ -40,10 +43,9 @@ export default function Progress(){
   const lib = useLibrary();
 
   // Livros / seleção
-  const books = Array.isArray(lib?.books) ? lib.books : [];
-
-  
+  const books = Array.isArray(lib?.books) ? lib.books : [];  
   const activeBook = lib?.activeBook || lib?.current || lib?.selectedBook || null;
+  const [noticeOpen, setNoticeOpen] = useState(false);
 
   if (!activeBook) {
     return (
@@ -60,7 +62,7 @@ export default function Progress(){
   /* ---------- Estado global atual ---------- */
   const st       = lib?.state || {};
   const goal     = num(st.goal, 50);           // meta do dia (global)
-  const ppm      = Math.max(0, num(st.ppm, 6));          // páginas / minuto (global)
+  const ppm      = Math.max(0, num(st.ppm, 1));          // páginas / minuto (global)
   const interval = Math.max(0, num(st.interval, 5));     // minutos / ciclo (global)
   const pagesToday = Math.max(0, num(st.progressDraft?.pagesToday, 0));
 
@@ -99,6 +101,9 @@ export default function Progress(){
     setTodayLocal((t) => clamp(t, 0, Math.max(0, localGoal)));
   }, [localGoal]);
 
+   // === estados do modal de diário (DENTRO do componente) ===
+  const [logOpen, setLogOpen] = useState(false);
+  const [savedToday, setSavedToday] = useState({ pages: 0, minutes: 0 });
 
   /* ---------- Derivados ---------- */
   const effPpm    = localInterval > 0 ? (localPpc / localInterval) : 0;
@@ -187,35 +192,35 @@ export default function Progress(){
   // abrir edições
   const startEditGoal = () => {
      setMenuOpen(false);
-     setGoalDraft(String(localGoal ?? 0)); 
+     setGoalDraft("");
      setEditing("goal"); 
      setGoalJump(true); 
      setTimeout(()=>setGoalJump(false),180); 
     };
   const startEditPpc  = () => { 
     setMenuOpen(false);
-    setPpcDraft(String(localPpc ?? 0));   
+    setPpcDraft(""); 
     setEditing("ppc");  
     setPpcJump(true);  
     setTimeout(()=>setPpcJump(false),180); 
   };
   const startEditInterval = () => { 
     setMenuOpen(false);
-    setIntDraft(String(localInterval ?? 0)); 
+    setIntDraft("");
     setEditing("interval"); 
     setIntJump(true); 
     setTimeout(()=>setIntJump(false),180); 
   };
   const startEditBookTotal= () => { 
     setMenuOpen(false);
-    setBookTotalDraft(String(localTotal ?? 0)); 
+    setBookTotalDraft("");
     setEditing("bookTotal"); 
     setBookTotalJump(true); 
     setTimeout(()=>setBookTotalJump(false),180); 
   };
   const startEditBookRead = () => { 
     setMenuOpen(false);
-    setBookReadDraft(String(localRead ?? 0));  
+    setBookReadDraft("");
     setEditing("bookRead");  
     setBookReadJump(true);  
     setTimeout(()=>setBookReadJump(false),180); 
@@ -269,16 +274,19 @@ export default function Progress(){
   const commitBookRead = () => {
     const wantedRead = Math.max(0, parseIntLike(bookReadDraft));
     const finalRead  = Math.min(Math.max(0, wantedRead), localTotal);
+  
     setLocalRead(finalRead);
-    lib?.setState?.(s0 => {
-      const books = Array.isArray(s0?.books)
-        ? s0.books.map(b => b.id === activeBook.id ? { ...b, pagesRead: finalRead } : b)
-        : s0?.books;
-      const ab = s0?.activeBook && s0.activeBook.id === activeBook.id
-        ? { ...s0.activeBook, pagesRead: finalRead }
-        : s0?.activeBook;
-      return { ...s0, books, activeBook: ab };
-    });
+  
+    // >>> escreve na biblioteca
+    if (lib?.updateBook) {
+      const patch = { pagesRead: finalRead };
+      if (localTotal > 0 && finalRead >= localTotal) {
+        patch.status = "lido";
+        if (!activeBook.finishedAt) patch.finishedAt = new Date().toISOString();
+      }
+      lib.updateBook(activeBook.id, patch);
+    }
+  
     saveBookSettings(activeBook, { pagesRead: finalRead });
     setEditing(null);
   };
@@ -338,47 +346,31 @@ const incPage = (delta) => {
 // adiciona 1 ciclo (usa págs/ciclo atual)
 const addCycle   = () => setPagesToday(p => p + Math.max(0, localPpc));
 
-  // grava o dia: soma "hoje" no lido geral e zera o "hoje"
-  const commitDayRead = () => {
-    const today = Math.max(0, todayLocal);
-    if (today <= 0) {
-      setTodayLocal(0);
-      saveBookSettings(activeBook, { pagesToday: 0 });
-      return;
-    }
-
-    // soma local, sem ultrapassar o total do livro
-    const add     = Math.min(today, Math.max(0, localTotal - localRead));
-    const readNew = Math.min(localTotal, localRead + add);
-
-    // 1) espelhos locais primeiro (para a UI não “cair”)
-    setLocalRead(readNew);
+const commitDayRead = () => {
+  const today = Math.max(0, todayLocal);
+  if (today <= 0) {
     setTodayLocal(0);
+    saveBookSettings(activeBook, { pagesToday: 0 });
+    return;
+  }
 
-    // 2) provider (books + activeBook + draft zerado)
-    lib?.setState?.(s0 => {
-      const books = Array.isArray(s0?.books)
-        ? s0.books.map(b =>
-            b.id === activeBook.id ? { ...b, pagesRead: readNew } : b
-          )
-        : s0?.books;
+  const add     = Math.min(today, Math.max(0, localTotal - localRead));
+  const readNew = Math.min(localTotal, localRead + add);
 
-      const activeBookNext =
-        s0?.activeBook && s0.activeBook.id === activeBook.id
-          ? { ...s0.activeBook, pagesRead: readNew }
-          : s0?.activeBook;
+ // ⏱️ estimativa em minutos usando ppc e intervalo
+ const ppc = Math.max(1, Number(localPpc) || 1);
+ const iv  = Math.max(1, Number(localInterval) || 1);
+ 
+ // minutos por página = minutosPorCiclo / páginasPorCiclo
+ const minPerPage = iv / ppc;
+ const minutes = Math.ceil(add * minPerPage);
 
-      const state = {
-        ...(s0.state || {}),
-        progressDraft: { ...(s0.state?.progressDraft || {}), pagesToday: 0 }
-      };
 
-      return { ...s0, books, activeBook: activeBookNext, state };
-    });
+  setSavedToday({ pages: add, minutes });
+  setLogOpen(true);
 
-    // 3) persistência
-    saveBookSettings(activeBook, { pagesToday: 0, pagesRead: readNew });
-  };
+  // NÃO atualiza pagesRead ainda — isso será feito no onSave do modal
+};
 
 
   // limpa o progresso do dia (zera today)
@@ -397,6 +389,20 @@ const addCycle   = () => setPagesToday(p => p + Math.max(0, localPpc));
     return () => root?.removeAttribute('data-tab');
   }, []);
 
+  function applyProgressUpdate(book, nextPagesRead){
+    const pages = Number(book.pages) || 0;
+    const full   = pages > 0 && nextPagesRead >= pages;
+  
+    const patch = { pagesRead: Math.min(nextPagesRead, pages) };
+  
+    if (full){
+      patch.status = "lido";
+      patch.pagesRead = pages;
+      if (!book.finishedAt) patch.finishedAt = new Date().toISOString();
+    }
+    return { ...book, ...patch };
+  }
+  
 
   /* ===================== JSX ===================== */
   return (
@@ -498,6 +504,7 @@ const addCycle   = () => setPagesToday(p => p + Math.max(0, localPpc));
                 />
                 <div className={s.knobLabel}>Meta do dia</div>
               </>
+
             ) : (
               <button type="button" className={s.kBtn} onClick={startEditGoal}>
                 <div className={`${s.knobValue} ${goalJump ? s.jump : ""}`}>{localGoal}</div>
@@ -639,22 +646,33 @@ const addCycle   = () => setPagesToday(p => p + Math.max(0, localPpc));
       {(() => {
         const ppcView = Math.max(1, Number.isFinite(localPpc) ? localPpc : 1);
         const rows = Math.max(1, Math.ceil((localGoal || ppcView) / ppcView));
-        
-      // limite visual de colunas — ajuste à vontade (6, 8, 10…
-        const MAX_COLS = 6
+        const MAX_COLS = 6;
+
+        // ⏱️ minutos por página (intervalo / págs por ciclo)
+        const minPerPage = (Number(localInterval) > 0 && ppcView > 0)
+          ? (Number(localInterval) / ppcView)
+          : 0;
 
         return (
           <div className={s.grid} role="grid" aria-label="Grade de páginas do dia">
             {Array.from({ length: rows }).map((_, r) => {
               const start = r * ppcView;
               const remainingForGoal = Math.max(0, (localGoal || 0) - start);
-              const cells = (localGoal > 0) ? Math.min(ppcView, remainingForGoal) : ppcView;
+
+              // páginas “visíveis” nesta linha (pode ser parcial na última)
+              const cells = (localGoal > 0)
+                ? Math.min(ppcView, remainingForGoal)
+                : ppcView;
 
               const cols = Math.min(Math.max(1, ppcView), MAX_COLS);
               const rowsNeeded = Math.max(1, Math.ceil(cells / cols));
               const hasWrap = rowsNeeded > 1;
               const doneHere = (localGoal > 0) ? Math.max(0, Math.min(todayLocal - start, cells)) : 0;
               const isEmpty = cells === 0;
+
+              // ⏱️ tempo proporcional às páginas dessa linha
+              // se quiser arredondar para múltiplos de 5, use Math.ceil((cells*minPerPage)/5)*5
+              const rowMinutes = Math.max(1, Math.ceil(cells * minPerPage));
 
               return (
                 <div
@@ -676,19 +694,19 @@ const addCycle   = () => setPagesToday(p => p + Math.max(0, localPpc));
                         <div
                           key={i}
                           className={`${s.block} ${filled ? s.blockDone : ""}`}
-
                         />
                       );
                     })}
                   </div>
 
-                  <div className={s.rowTime}>{Math.max(1, Number(localInterval || 0))}m</div>
+                  <div className={s.rowTime}>{rowMinutes}m</div>
                 </div>
               );
             })}
           </div>
         );
       })()}
+
 
 
       {/* ===== Painel de Ações ===== */}
@@ -788,6 +806,51 @@ const addCycle   = () => setPagesToday(p => p + Math.max(0, localPpc));
        saveBookSettings(activeBook, { ppm: nextPPM, interval: safeInterval });
      }}
    />
+   <DayLogModal
+      open={logOpen}
+      pages={savedToday.pages}
+      minutes={savedToday.minutes}
+      onCancel={() => setLogOpen(false)}
+      onSave={({ rating, note }) => {
+        // 1) fecha o modal imediatamente
+        setLogOpen(false);
+
+        // 2) mostra o aviso
+        setNoticeOpen(true);
+
+        // 3) aplica as páginas e grava a entrada
+        const add     = savedToday.pages;
+        const readNew = Math.min(localTotal, localRead + add);
+
+        setLocalRead(readNew);
+        setTodayLocal(0);
+
+        if (lib?.updateBook) {
+          const patch = { pagesRead: readNew };
+          if (localTotal > 0 && readNew >= localTotal) {
+            patch.status = "lido";
+            if (!activeBook.finishedAt) patch.finishedAt = new Date().toISOString();
+          }
+          lib.updateBook(activeBook.id, patch);
+        }
+        saveBookSettings(activeBook, { pagesToday: 0, pagesRead: readNew });
+
+        lib.addDailyEntry(activeBook.id, {
+          pages: savedToday.pages,
+          minutes: savedToday.minutes,
+          rating,
+          note,
+          dateISO: new Date().toISOString(),
+        });
+      }}
+    />
+  <SavedNotice
+    open={noticeOpen}
+    title="Leitura salva!"
+    subtitle="Entrada adicionada ao diário"
+    duration={1500}                 // ajuste se quiser mais/menos tempo
+    onClose={() => setNoticeOpen(false)}
+  />
  </section>
 );
 }

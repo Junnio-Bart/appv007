@@ -1,0 +1,200 @@
+/* Backdrop com blur=3 (padrão do app) */
+.backdrop{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  backdrop-filter: blur(3px);
+  display: grid;
+  place-items: center;
+  z-index: 9999;
+}
+
+/* Cartão */
+.card{
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 14px;
+  padding: 16px 18px;
+  width: min(520px, 92vw);
+  box-shadow: 0 10px 30px rgba(0,0,0,.35);
+}
+
+.title{
+  margin: 2px 0 10px;
+  color: #e5e7eb;
+  font-weight: 800;
+  font-size: 30px;
+  text-align: center;
+  letter-spacing: .4px;
+}
+
+/* Trilho: setas + anos */
+.dial{
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Setas no estilo “play” que você usa no app */
+.arrow{
+  inline-size: 36px;
+  block-size: 36px;
+  border-radius: 10px;
+  background: #111827;
+  border: 1px solid #334155;
+  display: grid;
+  place-items: center;
+  position: relative;
+  cursor: pointer;
+  transition: transform .16s ease, border-color .16s ease, opacity .16s ease;
+}
+.arrow:hover{ border-color:#3b82f6; }
+.arrow:active{ transform: scale(.95); }
+.arrow::before{
+  content: "";
+  width: 0; height: 0; display: block;
+  border-top: 6px solid transparent;
+  border-bottom: 6px solid transparent;
+  border-left: 9px solid #e5e7eb; /* triângulo → */
+}
+.playLeft::before{ transform: rotate(180deg); } /* triângulo ← */
+.arrowDisabled,
+.arrow:disabled{
+  opacity: .35;
+  cursor: not-allowed;
+}
+
+/* Linha de anos (arrastável) */
+.yearsRow{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-width: 0;
+  touch-action: pan-y;
+  user-select: none;
+}
+
+/* Botões de ano */
+.yearBtn{
+  appearance: none;
+  border: 1px solid #334155;
+  background: #111827;
+  color: #e5e7eb;
+  border-radius: 12px;
+  padding: 10px 16px;
+  font-weight: 800;
+  letter-spacing: .3px;
+  transition: transform .18s ease, opacity .18s ease, background .18s ease, border-color .18s ease;
+}
+.isCenter{
+  background: #1f2937;
+  border-color: #3b82f6;
+  color: #fff;
+  transform: scale(1.14);
+  font-size: 20px;
+  box-shadow: 0 4px 14px rgba(59,130,246,.18);
+}
+.isSide{
+  opacity: .55;
+  font-size: 16px;
+  transform: scale(.94);
+}
+.yearBtn:hover{ border-color:#3b82f6; }
+.disabled{
+  opacity:.25;
+  pointer-events:none;
+  filter: grayscale(.3);
+}
+/* container */
+.box{
+  border:1px solid #22314d;
+  border-radius:16px;
+  padding:12px;
+  background:#0b1220;
+  display:grid;
+  gap:10px;
+}
+/* linha com ano + meses lado a lado */
+.head{
+  display:grid;
+  grid-template-columns: auto 1fr;
+  gap:12px;
+  align-items:center;
+}
+/* ano */
+.yearRow{ display:flex; align-items:center; } /* pode nem usar mais */
+.yearPill{
+  padding:6px 14px; border-radius:12px;
+  background:transparent; border:1px solid #334155; color:#e5e7eb;
+  font-weight:900; font-size:18px;
+}
+/* trilha de meses (3 itens) */
+.mDial{
+  display:grid;
+  grid-template-columns: auto 1fr auto;
+  align-items:center;
+  gap:8px;
+}
+
+/* setas estilo “play”, iguais ao modal */
+.mArrow{
+  inline-size:36px; block-size:36px;
+  border-radius:10px;
+  background:#111827; border:1px solid #334155; color:#e5e7eb;
+  display:grid; place-items:center; position:relative;
+  transition:transform .16s ease, border-color .16s ease, opacity .16s ease;
+}
+.mArrow:hover{ border-color:#3b82f6; }
+.mArrow:active{ transform:scale(.95); }
+.mArrow::before{
+  content:""; width:0; height:0; display:block;
+  border-top:6px solid transparent;
+  border-bottom:6px solid transparent;
+  border-left:9px solid #e5e7eb; /* triângulo → */
+}
+.playLeft::before{ transform:rotate(180deg); }
+.arrowDisabled,
+.mArrow:disabled{ opacity:.35; cursor:not-allowed; }
+
+/* faixa arrastável */
+.mRow{
+  display:flex; gap:10px; justify-content:center; align-items:center;
+  touch-action: pan-y;
+  user-select: none;
+}
+
+/* chips dos meses */
+.mChip{
+  padding:8px 12px; border-radius:12px;
+  border:1px solid #334155; background:#111827; color:#e5e7eb;
+  transition: transform .18s ease, opacity .18s ease, border-color .18s ease, background .18s ease;
+  min-width:66px; text-transform:lowercase; font-weight:800; letter-spacing:.3px;
+}
+.isCenter{
+  background:#1f2937; border-color:#3b82f6; color:#fff;
+  transform:scale(1.12);
+  box-shadow:0 4px 14px rgba(59,130,246,.18);
+}
+.isSide{
+  opacity:.7; transform:scale(.94);
+}
+.mChip:hover{ border-color:#3b82f6; }
+.disabled{ opacity:.35; pointer-events:none; filter:grayscale(.3); }
+
+/* âncora “hoje” (mantém o seu estilo) */
+.todayRow{ display:flex; }
+.todayBtn{
+  padding:6px 12px; border-radius:12px; background:transparent;
+  border:1px solid #334155; color:#e5e7eb;
+}
+
+.modal{
+  position: fixed;
+  inset: 0;                /* top/right/bottom/left: 0 */
+  z-index: 9999;           /* alto o suficiente */
+  display: grid;
+  place-items: center;
+  background: rgba(0,0,0,.45);
+}

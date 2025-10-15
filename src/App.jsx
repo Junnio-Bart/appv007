@@ -31,6 +31,7 @@ export default function App(){
             src={bookLogo}
             height="64px"
           />
+        
         </header>
 
         {tab === "library"  && <Library onGoProgress={() => setTab("progress")} />}

@@ -1,0 +1,497 @@
+/* container do bloco inteiro */
+.box{
+  border:1px solid #22314d;
+  border-radius:16px;
+  padding:12px;
+  background:#0b1220;
+  display:grid;
+  gap:10px;
+}
+
+/* linha do ano */
+.yearRow{
+  display:flex; align-items:center; gap:8px;
+}
+.yearArrow{
+  padding:60px 10px; border-radius:10px;
+  background:#0b1a2a; border:1px solid #334155; color:#e5e7eb;
+}
+.yearPill{
+  padding:6px 14px; 
+  border-radius:12px;
+  background:transparent; 
+  border:1px solid #334155; 
+  color:#e5e7eb;
+  font-weight:900; font-size:18px;
+}
+
+/* linha dos meses */
+/* container */
+.box{
+  border:1px solid #22314d;
+  border-radius:12px;
+  padding:12px;
+  background:#0b1220;
+  display:grid;
+  gap:10px;
+}
+
+/* linha com ano + meses lado a lado */
+.head{
+  display:grid;
+  grid-template-columns: auto 1fr;
+  gap:12px;
+  align-items:center;
+}
+
+/* ano */
+.yearRow{ display:flex; align-items:center; } /* pode nem usar mais */
+.yearPill{
+  padding:8px 14px; 
+  border-radius:12px;
+  background:transparent; 
+  border:1px solid #334155; 
+  color:#e5e7eb;
+  font-weight:800; 
+  font-size:16px;
+}
+
+/* trilha de meses (3 itens) */
+.mDial{
+  display:grid;
+  grid-template-columns: auto 1fr auto;
+  align-items:center;
+  gap:8px;
+}
+
+/* setas estilo “play”, iguais ao modal */
+.mArrow{
+  inline-size:36px; block-size:36px;
+  border-radius:12px;
+  background:#111827; border:1px solid #334155; color:#e5e7eb;
+  display:grid; place-items:center; position:relative;
+  transition:transform .16s ease, border-color .16s ease, opacity .16s ease;
+}
+.mArrow:hover{ border-color:#3b82f6; }
+.mArrow:active{ transform:scale(.95); }
+.mArrow::before{
+  content:""; width:0; height:0; display:block;
+  border-top:6px solid transparent;
+  border-bottom:6px solid transparent;
+  border-left:9px solid #e5e7eb; /* triângulo → */
+}
+.playLeft::before{ transform:rotate(180deg); }
+.arrowDisabled,
+.mArrow:disabled{ opacity:.35; cursor:not-allowed; }
+
+/* faixa arrastável */
+.mRow{
+  display:flex; gap:10px; justify-content:center; align-items:center;
+  touch-action: pan-y;
+  user-select: none;
+}
+
+/* chips dos meses */
+.mChip{
+  padding:8px 12px; border-radius:12px;
+  border:1px solid #334155; background:#111827; color:#e5e7eb;
+  transition: transform .18s ease, opacity .18s ease, border-color .18s ease, background .18s ease;
+  min-width:66px; text-transform:lowercase; font-weight:800; letter-spacing:.3px;
+}
+.isCenter{
+  background:#1f2937; border-color:#3b82f6; color:#fff;
+  transform:scale(1.12);
+  box-shadow:0 4px 14px rgba(59,130,246,.18);
+}
+.isSide{
+  opacity:.7; transform:scale(.96);
+}
+.mChip:hover{ border-color:#3b82f6; }
+.disabled{ opacity:.35; pointer-events:none; filter:grayscale(.3); }
+
+/* ===== Modal ===== */
+.modal{
+  position:fixed; inset:0; display:grid; place-items:center; background:rgba(0,0,0,.45); z-index:50;
+}
+.modalCard{
+  background:#0b1220; border:1px solid #22314d; border-radius:16px; padding:16px; width:min(520px, 92vw);
+}
+.modalTitle{
+  font-size:24px; font-weight:900; text-align:center; margin-bottom:12px; color:#e5e7eb;
+}
+.years{ display:grid; 
+  grid-template-columns:auto 1fr auto; gap:8px; align-items:center; }
+.modalArrow{
+  padding:8px 12px; border-radius:12px; background:#0b1a2a; border:1px solid #334155; color:#e5e7eb;
+}
+.modalArrow.disabled{ opacity:.35; pointer-events:none; }
+
+.yearDial{ display:flex; gap:8px; justify-content:center; }
+.yearItem{
+  padding:6px 14px; 
+  border-radius:12px; 
+  border:1px solid #334155; 
+  color:#e5e7eb; 
+  background:transparent;
+  min-width:90px; 
+  font-weight:800; 
+  font-size:17px;
+}
+.yearItem.center{ outline:2px solid #3b82f6; }
+.yearItem.side{ opacity:.85; }
+.yearItem.disabled{ opacity:.35; pointer-events:none; }
+
+/* ===== Variables (pode colocar no :root ou direto na .box) ===== */
+.box{
+  --track-w: 260px;           /* largura do trilho (ajuste aqui) */
+  --chip-min-w: 55px;         /* largura mínima de cada chip */
+  --chip-gap: 12px;           /* gap entre chips */
+  --center-scale: 1.02;       /* escala do chip central */
+  --side-scale: .98;          /* escala dos chips laterais */
+  --arrow-size: 10px;         /* tamanho das setas (triângulo) */
+  --arrow-hit: 28px;          /* área clicável da seta */
+  border:1px solid #22314d;
+  border-radius:16px;
+  padding:12px;
+  padding-right: 6px; 
+  background:#0b1220;
+  display:grid;
+  gap:6px;
+}
+
+/* Ano + meses lado a lado */
+.head{
+  display:grid;
+  grid-template-columns: auto 1fr;
+  gap:2px;
+  align-items:center;
+}
+
+/* Ano (igual ao seu padrão) */
+.yearPill{
+  padding:6px 14px; 
+  border-radius:10px;
+  background:transparent; 
+  border:1px solid #334155; 
+  color:#e5e7eb;
+  font-weight:900; 
+  font-size:16px;
+  position: relative;     /* cria uma layer própria */
+  z-index: 2;             /* garante acima de pseudo-elements */
+  pointer-events: auto;   /* assegura que recebe o clique */
+}
+
+/* ===== Trilho dos meses ===== */
+.mWrap{
+  display:grid;
+  grid-template-columns: auto 1fr auto;
+  align-items:center;
+  gap:1px;
+}
+
+/* setas tipo "ghost" (sem caixinha) */
+.ghostArrow{
+  inline-size: var(--arrow-hit);
+  block-size: var(--arrow-hit);
+  padding: 0;
+  line-height: 0;
+  background: transparent;
+  border: none;
+  min-width: 0;
+  display: grid; place-items: center;
+  cursor: pointer;
+}
+.ghostArrow::before{
+  content:"";
+  width:0; height:0; display:block;
+  border-top:  calc(var(--arrow-size)/2) solid transparent;
+  border-bottom: calc(var(--arrow-size)/2) solid transparent;
+  border-left: var(--arrow-size) solid #e5e7eb;
+}
+.playLeft::before{ transform: rotate(180deg); }
+.arrowDisabled,
+.ghostArrow:disabled{ opacity:.35; cursor:not-allowed; }
+
+/* viewport que CLIPA o conteúdo (não vaza do box) */
+.mViewport{
+  /* ocupa todo o espaço entre as setas */
+  width: 100%;
+  min-width: 0;
+
+  /* corta só no eixo horizontal */
+  overflow-x: hidden;
+  overflow-y: visible;
+
+  /* folga vertical para o scale do central */
+  padding-block: 4px;
+}
+
+/* linha interna: 3 chips */
+.mRow{
+  display: flex;
+  gap: var(--chip-gap);
+  align-items: center;
+  justify-content: center;
+  /* swipe suave */
+  touch-action: pan-y;
+  user-select: none;
+}
+
+/* chips */
+.mChip{
+  min-width: var(--chip-min-w);
+  padding: 8px 12px;
+  border-radius:8px;
+  border:1px solid #334155;
+  background:#111827;
+  color:#e5e7eb;
+  text-transform: lowercase;
+  font-weight: 800;
+  letter-spacing:.3px;
+  line-height: 1; /* ajuda a não “puxar” altura extra */
+  transition: transform .18s ease, opacity .18s ease, border-color .18s ease, background .18s ease;
+}
+.isCenter{
+  background:#1f2937; border-color:#3b82f6; color:#fff;
+  transform: scale(var(--center-scale));
+  box-shadow: 0 4px 14px rgba(59,130,246,.18);
+}
+.isSide{
+  opacity:.7; transform: scale(var(--side-scale));
+}
+.mChip:hover{ border-color:#3b82f6; }
+.disabled{ opacity:.35; pointer-events:none; filter:grayscale(.3); }
+
+/* âncora "hoje" (mantém o seu estilo) */
+.todayRow{ display:flex; }
+.todayBtn{
+  padding:6px 12px; border-radius:10px; background:transparent;
+  border:1px solid #334155; color:#e5e7eb;
+}
+/* exemplo: deixar mais compacto */
+.journalTop .box{
+  --track-w: 210px;    /* trilho menor */
+  --chip-min-w: 58px;  /* chips mais estreitos */
+  --chip-gap: 8px;     /* menos espaço entre chips */
+  --center-scale: 1.10;
+  --side-scale: .92;
+  --arrow-size: 18px;  /* triângulo menor */
+  --arrow-hit: 24px;   /* área clicável menor */
+}
+/* Vars de controle da âncora — ajuste como quiser */
+.box{
+  /* ...suas outras vars... */
+  --today-font-size: 17px;     /* tamanho da fonte */
+  --today-font-weight: 800;    /* grossura da fonte */
+  --today-pad-v: 12px;          /* altura (padding vertical) */
+  --today-pad-h: 22px;         /* largura (padding horizontal) */
+  --today-radius: 10px;        /* arredondamento */
+  --today-border-w: 1px;       /* espessura da borda */
+
+  --today-border-active: #3b82f6; /* igual ao mês selecionado (azul) */
+  --today-border-idle:   #334155; /* igual ao mês não selecionado */
+  --today-bg:            transparent;
+  --today-fg:            #e5e7eb;
+}
+
+/* Centraliza a âncora */
+.todayRow{
+  display:flex;
+  justify-content:center;
+  margin-top: 8px; /* ajuste fino opcional */
+}
+
+/* Botão em si (totalmente controlado por vars) */
+.todayBtn{
+  background: var(--today-bg);
+  color: var(--today-fg);
+  font-size: var(--today-font-size);
+  font-weight: var(--today-font-weight);
+  padding: var(--today-pad-v) var(--today-pad-h);
+  border-radius: var(--today-radius);
+  border: var(--today-border-w) solid var(--today-border-idle);
+  line-height: 1;                /* evita “esticar” verticalmente */
+  letter-spacing: .2px;
+  transition: border-color .16s ease, background .16s ease, color .16s ease, transform .12s ease;
+}
+
+/* Estado quando está vendo o mês/ano atual → borda azul (matching) */
+.tActive{
+  border-color: var(--today-border-active);
+  /* se quiser, pode reforçar: box-shadow: 0 0 0 2px color-mix(in srgb, var(--today-border-active) 30%, transparent); */
+}
+
+/* Estado quando está em outros meses/anos → borda “neutra” */
+.tInactive{
+  border-color: var(--today-border-idle);
+  opacity: .95;
+}
+
+/* Hover/press (opcional) */
+.todayBtn:hover{ border-color: var(--today-border-active); }
+.todayBtn:active{ transform: scale(.98); }
+
+/* linha extra dentro do box do calendário (abaixo do "hoje") */
+.extraRow{
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0;
+  margin-top: 8px;
+  padding-top: 8px;
+  padding-inline: 8px;              /* evita encostar na borda arredondada */
+  box-sizing: border-box;
+}
+/* linha “Ano + trilho” no modo aberto */
+.head{
+  display:grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  align-items:center;
+}
+
+/* barra compacta: setas+mês  •  hoje  •  badge do mês */
+.miniBar{
+  display:grid;
+  grid-template-columns: 1fr auto auto;
+  align-items:center;
+  gap: 8px;
+}
+
+/* container direito do badge no compacto */
+.miniRight{
+  display:flex;
+  justify-content:flex-end;
+  align-items:center;
+}
+/* garante tamanho dos badges no calendário 
+.miniRight :global(.badge),
+.extraRow  :global(.badge){
+  --gb-w: var(--gb-cal-w, 150px);
+  --gb-h: var(--gb-cal-h, 60px);
+}
+/*
+
+/* faixa extra (badges) no modo aberto */
+.extraRow{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+/* viewport + trilho (já definidos no seu arquivo; repito aqui pra garantir) */
+.mWrap{ display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:6px; }
+.mViewport{ width:100%; min-width:0; overflow-x:hidden; overflow-y:visible; padding-block:4px; }
+.mRow{ display:flex; gap:var(--chip-gap, 12px); justify-content:center; align-items:center; touch-action:pan-y; user-select:none; }
+
+/* setas "fantasmas" (sem caixa) */
+.ghostArrow{ inline-size:var(--arrow-hit, 28px); block-size:var(--arrow-hit, 28px); background:transparent; border:none; display:grid; place-items:center; cursor:pointer; }
+.ghostArrow::before{
+  content:""; width:0; height:0; display:block;
+  border-top: calc(var(--arrow-size, 10px)/2) solid transparent;
+  border-bottom: calc(var(--arrow-size, 10px)/2) solid transparent;
+  border-left: var(--arrow-size, 10px) solid #e5e7eb;
+}
+.playLeft::before{ transform:rotate(180deg); }
+
+
+
+/* ===== TUNING DO MODO COMPACTO ===== */
+
+/* ===== Cabeçalho compacto: [ANO] [HOJE] [MÊS+SETAS] ===== */
+.miniHeader{
+  display:grid;
+  grid-template-columns: auto 1fr auto;  /* [ano] [hoje] [mês+setas] */
+  align-items:center;
+
+  /* NOVAS VARS DE CONTROLE */
+  gap: var(--mini-gap, 8px);                 /* gap entre os três “cards” */
+  padding-inline: var(--mini-sides, 10px);   /* respiro nas laterais do box */
+
+  /* já existentes… */
+  --mini-track-gap: 4px;
+  --mini-arrow-hit: 18px;
+  --mini-arrow-size: 10px;
+  --mini-today-size: 17px;
+  --mini-today-px: 10px;
+  --mini-today-py: 15px;
+  --mini-chip-w: 55px;
+}
+
+.miniHeader .yearPill{ 
+  margin-right: var(--mini-edge-right, 0px); 
+  position: relative;
+  z-index: 2;
+}
+.miniHeader .miniRight{ margin-left: var(--mini-edge-left, 0px); }
+
+.miniHeader > :nth-child(2){ justify-self:center; }      /* “hoje” no meio */
+.miniRight{ display:flex; justify-content:flex-end; }
+
+/* aplica os tamanhos menores ao trilho do compacto */
+.miniHeader .mWrap{ gap: var(--mini-track-gap); }
+.miniHeader .ghostArrow{
+  inline-size: var(--mini-arrow-hit);
+  block-size: var(--mini-arrow-hit);
+}
+.miniHeader .ghostArrow::before{
+  border-left: var(--mini-arrow-size) solid #e5e7eb;
+  border-top:  calc(var(--mini-arrow-size)/2) solid transparent;
+  border-bottom: calc(var(--mini-arrow-size)/2) solid transparent;
+}
+.miniHeader .mChip{
+  min-width: var(--mini-chip-w);
+  padding: 9px 12px;
+  border-radius: 010px;
+}
+
+/* “29 - s” enxuto (usa as vars acima) */
+.miniToday{
+  font-size: var(--mini-today-size);
+  height: var(--mini-today-h, 45px);
+  min-width: var(--mini-today-w, 110px);
+  padding: var(--mini-today-py) var(--mini-today-px);
+  display:inline-flex; align-items:center; justify-content:center;
+}
+
+.miniBar .todayBtn{
+  margin-left: var(--mini-today-nudge, 0px); /* valor vem do parent */
+}
+
+.tNum{ font-weight: 800; }
+.tSep{ opacity:.7; margin: 0 6px; font-weight: 700; }
+.tWd{ font-style: normal; }
+
+/* Wrapper que ANIMA a altura quando troca aberto/fechado */
+.heightWrap{
+  position: relative;
+  overflow: hidden;
+  transition: height .22s ease;
+}
+
+/* Dois “grupos” empilhados; a gente só mostra um deles */
+.group{
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  transition: opacity .14s ease, transform .18s ease;
+  will-change: opacity, transform;
+}
+
+/* estados visível/oculto (cross-fade + leve slide) */
+.show{ opacity: 1; transform: translateY(0); position: relative; }
+.hide{ opacity: 0; transform: translateY(-6px); pointer-events: none; }
+
+/* coloca o conteúdo do calendário acima das pseudo-camadas do sticky */
+.box{ position: relative; z-index: 1; }
+
+/* o botão do ano fica “no topo” e com clique ativo */
+.yearPill{
+  position: relative;
+  z-index: 3;
+  pointer-events: auto;
+}

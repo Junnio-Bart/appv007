@@ -1,0 +1,126 @@
+/* ===== knobs (ajuste livre) ===== */
+.box{
+  /* layout/posicionamento */
+  --shelf-fill-h: auto;      /* ex.: calc(100dvh - 210px) → força ir até a navbar */
+  --shelf-bottom-gap: 8px;   /* distância até a barra de menu */
+
+  /* grade/carta */
+  --shelf-cols: 3;           /* qtde de colunas SEM quebrar pra 2 */
+  --col-gap: 12px;
+  --row-gap: 12px;
+
+  /* tamanho “do livro” */
+  --card-pad: 10px;
+  --card-radius: 12px;
+  --cover-ratio: 3/4;        /* 2/3 deixa mais baixinho */
+  --cover-radius: 10px;
+
+  /* textos e barra */
+  --title-size: 14px;
+  --author-size: 12px;
+  --bar-h: 8px;
+  --bar-bg: #0b1220;
+  --bar-border: #22314d;
+  --bar-fill: #3b82f6;
+
+  border:1px solid #22314d;
+  border-radius:16px;
+  padding:12px;
+  margin-top:12px;
+  margin-bottom: var(--shelf-bottom-gap);
+  background:#0b1220;
+
+  /* >>> trocamos para flex: o box “cresce” até o fim */
+  display:flex;
+  flex-direction: column;
+  min-height: var(--shelf-fill-h);
+}
+
+/* cabeçalho fixo no topo do box */
+.head{
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:12px;
+}
+.head h3{ margin:0; font-size:22px; font-weight:900; }
+
+/* área rolável interna → sempre ocupa o restante do box */
+.scroll{
+  flex: 1;
+  min-height: 0;                 /* necessário para o overflow funcionar no flex */
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  padding-right: 2px;
+  border-radius: 10px;
+}
+
+/* quando estiver vazio, ainda “enche” o box e centraliza */
+.scroll > .empty{
+  min-height: 100%;
+  display:grid; place-items:center;
+  color:#cbd5e1; opacity:.9;
+  border:1px #22314d; border-radius:12px;
+}
+.empty p{ margin: 22px 0 12px; }
+.addSlot{
+  margin-top:8px;
+  width:110px; height:84px;
+  border-radius:12px;
+  border:1px solid #334155;
+  background:transparent; color:#22c55e;
+  font-size:32px; line-height:0;
+}
+.addSlot:hover{ border-color:#3b82f6; }
+
+/* grade SEM quebrar pra 2 colunas */
+.grid{
+  display:grid;
+  grid-template-columns: repeat(var(--shelf-cols), minmax(0, 1fr));
+  gap: var(--row-gap) var(--col-gap);
+}
+
+/* CARTA */
+.card{
+  color: #fff; 
+  background:transparent; 
+  border:1px solid #22314d;
+  border-radius: var(--card-radius);
+  padding: var(--card-pad);
+  display:grid; gap:10px;
+  cursor: pointer; 
+}
+
+/* capa */
+.cover{
+  aspect-ratio: var(--cover-ratio);
+  border-radius: var(--cover-radius);
+  overflow:hidden;
+  background:#0b1220;
+  display:grid; place-items:center;
+}
+.cover img{ width:100%; height:100%; object-fit:cover; display:block; }
+.ph{ font-size:28px; color:#64748b; }
+
+/* textos */
+.meta{ display:grid; gap:4px; }
+.title{
+  font-weight:800;
+  font-size: var(--title-size);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.author{
+  opacity:.85;
+  font-size: var(--author-size);
+}
+
+/* barra de progresso */
+.bar{
+  height: var(--bar-h);
+  background: var(--bar-bg);
+  border:1px solid var(--bar-border);
+  border-radius:8px;
+  overflow:hidden;
+}
+.bar span{ display:block; height:100%; background: var(--bar-fill); width:0; }
+
+/* >>> removemos o @media que forçava 2 colunas */

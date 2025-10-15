@@ -1,0 +1,86 @@
+/* z-index acima do Drawer */
+.backdrop{ position:fixed; inset:0; background:rgba(0,0,0,.45); z-index: 12000; }
+
+.panel{
+  position:fixed;
+  left:50%; top:50%;
+  transform:translate(-50%,-50%);
+  z-index: 12001;
+  width:min(92vw, 720px);
+  max-height:86vh;
+  overflow:auto;
+  background:#0f172a;
+  border:1px solid #22314d;
+  border-radius:16px;
+  padding:16px;
+
+  /* 🔧 move os knobs pra cá, dentro da própria definição */
+  --note-title-size: 22px;
+  --note-badges-size: 12px;
+  --note-stars-size: 24px;
+}
+
+.title {
+  margin: 0 0 6px;
+  font-weight: 800;
+  font-size: var(--note-title-size);
+}
+.sub{ 
+  display:flex; 
+  gap:8px; 
+  margin-bottom:10px; 
+}
+.badge{ 
+  background:#091326; 
+  border:1px solid #22314d; 
+  border-radius:8px; 
+  padding:6px 12px; 
+  font-size: var(--note-badges-size); 
+  align-items:center;
+  margin: 6px 0 0;
+}
+
+/* estrelas + legenda (editáveis, sem hover) */
+.rateWrap{ 
+  display:flex; 
+  align-items:center; 
+  gap:12px; 
+  margin: 1px 0 14px; }
+.noteStars{ display:flex; align-items:center; gap:1px; }
+.starBtn{
+  font-size: var(--note-stars-size);
+  background: transparent; border: 0; cursor: pointer;
+  color: var(--star-empty, rgba(255,255,255,.35));
+}
+.starBtn.filled{ color: var(--star-filled, #FFD76A); }
+.starCaption{ font-style: italic; opacity:.9; }
+
+/* nota editável */
+.note{
+  width: 100%;
+  min-height: 160px;
+  background: #0b1326;
+  border: 1px solid #22314d;
+  color: #fff;
+  border-radius: 12px;
+  padding: 10px;
+  font: inherit;
+  line-height: 1.45;
+  resize: vertical;
+}
+
+.actions{ display:flex; justify-content:flex-end; gap:8px; margin-top:14px; }
+.btnGhost{ background:#0b1326; border:1px solid #22314d; color:#fff; border-radius:10px; padding:6px 10px; }
+.btnPrimary{ background:#1761d0; border:1px solid #1a4f9c; color:#fff; border-radius:10px; padding:6px 12px; }
+
+/* responsivo */
+@media (max-width: 480px){
+  .panel{
+    width: 94vw;
+    /* 🔽 só mudamos o KNOB — o .title continua usando a var */
+    --note-title-size: 24px;     /* ajuste aqui o tamanho em telas pequenas */
+  }
+  /* remova a linha antiga que fixava 16px */
+  /* .title{ font-size: 16px; }  <-- delete */
+}
+button, .btnGhost, .btnPrimary { cursor: pointer; }

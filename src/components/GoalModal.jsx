@@ -2,21 +2,12 @@
 import { useEffect, useState } from "react";
 import s from "./GoalModal.module.css";
 import ModalMount from "./ModalMount.jsx";
+import SmartNumberInput from "./SmartNumberInput.jsx";
 
 export default function GoalModal({ open, initialGoal=0, maxGoal=1, onSave, onClose }){
   const [value, setValue] = useState(initialGoal);
 
   useEffect(() => { if (open) setValue(initialGoal); }, [open, initialGoal]);
-
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e) => {
-      if (e.key === "Escape") onClose?.();
-      if (e.key === "Enter")  onSave?.(value);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open, value, onSave, onClose]);
 
   if (!open) return null;
 
@@ -31,11 +22,19 @@ export default function GoalModal({ open, initialGoal=0, maxGoal=1, onSave, onCl
         <div className={s.field}>
           <label className={s.label}>Páginas (máx {maxGoal})</label>
           <div className={s.inputBox}>
-            <input
+          <SmartNumberInput
               className={s.input}
-              type="number" inputMode="numeric" min="0" step="1"
-              value={value}
-              onChange={(e)=> setValue(cap(e.target.value))}
+              currentValue={value}
+              min={0}
+              max={maxGoal}
+              // Live = prévia no visor do modal
+              onLiveChange={(n) => { if (Number.isFinite(n)) setValue(cap(n)); }}
+              // Commit em Enter OU blur → salva e fecha
+              onCommit={(n) => {
+                const final = cap(Number.isFinite(n) ? n : value);
+                setValue(final);
+                onSave?.(final);
+              }}
             />
             <span className={s.unit}>pág</span>
           </div>

@@ -1,0 +1,67 @@
+.backdrop{
+  position:fixed; inset:0; z-index:500;
+  background:rgba(0,0,0,.45);
+  -webkit-backdrop-filter:blur(3px); backdrop-filter:blur(3px);
+  display:grid; place-items:center;
+}
+.card{
+  /* knob: largura do card */
+  width: min(92vw, var(--gm-card-w, 340px));
+  background:#0b1220;
+  border:1px solid #22314d;
+  border-radius:16px;
+  padding:16px;
+  box-shadow:0 10px 40px rgba(0,0,0,.35);
+}
+
+/* título sem parênteses mesmo — você decide o texto no prop title */
+.title{ margin:0 0 12px; font-size:22px; font-weight:900; }
+
+.form{ display:grid; gap:10px; }
+
+.controls{
+  --gm-input-w: 110px; /* KNOB de largura do input (pode sobrescrever via style) */
+  display:grid;
+  grid-template-columns: 44px var(--gm-input-w) 44px;
+  justify-content:center;
+  align-items:center;
+  gap:10px;
+}
+.step{
+  height:40px;
+  border-radius:12px; 
+  border:1px solid #334155;
+  background:#0f172a; 
+  color:#e5e7eb; 
+  font-size:24px; 
+  font-weight:900;
+}
+.input{
+  height:40px; border-radius:12px; border:1px solid #334155;
+  background:#0f172a; color:#e5e7eb;
+  text-align:center; font-size:18px; font-weight:800;
+  width:var(--gm-input-w);
+}
+
+/* 🔻 remove as setinhas do input number */
+.input::-webkit-outer-spin-button,
+.input::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
+.input{ -moz-appearance:textfield; }
+
+/* frase motivacional */
+.hint{
+  margin: 0;
+  font-size: 14px;
+  opacity: .85;
+  text-align: center;
+}
+
+.actions{ display:flex; justify-content:flex-end; gap:8px; }
+.cancel{
+  border:1px solid #334155; background:transparent; color:#e5e7eb;
+  border-radius:10px; padding:8px 12px;
+}
+.save{
+  border:1px solid #1d4ed8; background:#1d4ed8; color:#fff;
+  border-radius:10px; padding:8px 12px; font-weight:800;
+}
