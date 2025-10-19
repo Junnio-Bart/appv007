@@ -10,6 +10,8 @@ import bookLogo from "./assets/icons/logo.svg";
 
 import DriveConnectButton from "./components/DriveConnectButton.jsx";
 
+import './styles/buttons.css';
+
 // …dentro do header… //
 <DriveConnectButton />
 // …dentro do header… //

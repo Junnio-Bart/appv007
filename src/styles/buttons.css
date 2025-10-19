@@ -1,0 +1,70 @@
+:root{
+  /* paleta do app */
+  --btn-fg: #ffffff;
+  --btn-bg: #0b1326;
+  --btn-bd: #22314d;
+
+  --btn-primary: #22c55e;     /* verde (estilo "Novo Livro") */
+  --btn-primary-hov: #16a34a;
+  --btn-primary-bd: #1b8e4a;
+
+  --btn-danger: #dc3545;
+  --btn-danger-hov: #b0202d;
+  --btn-danger-bd: #a01c28;
+
+  --btn-radius: 12px;
+  --btn-pad-y: 13px;
+  --btn-pad-x: 16px;
+  --btn-fw: 700;
+  --btn-fs: 15px
+}
+
+/* base */
+.btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:.5rem;
+  padding: var(--btn-pad-y) var(--btn-pad-x);
+  border-radius: var(--btn-radius);
+  border: 1px solid var(--btn-bd);
+  background: var(--btn-bg);
+  color: var(--btn-fg);
+  font-weight: var(--btn-fw);
+  font-size: var(--btn-fs);
+  line-height: 1;
+  cursor: pointer;
+  transition: transform .02s ease, filter .15s ease, background .15s ease, border-color .15s ease;
+  user-select: none;
+}
+.btn:hover{ filter: brightness(1.05); }
+.btn:active{ transform: translateY(1px); }
+.btn:disabled{ opacity:.55; cursor:not-allowed; }
+
+/* variantes */
+.btn-primary{
+  background: var(--btn-primary);
+  border-color: var(--btn-primary-bd);
+  color: #fff;
+}
+.btn-primary:hover{ background: var(--btn-primary-hov); }
+
+.btn-ghost{
+  background: #0b1326;
+  border-color: var(--btn-bd);
+  color: #fff;
+}
+
+.btn-danger{
+  background: var(--btn-danger);
+  border-color: var(--btn-danger-bd);
+  color: #fff;
+}
+.btn-danger:hover{ background: var(--btn-danger-hov); }
+
+/* tamanhos opcionais */
+.btn-sm{ padding: 8px 12px; border-radius: 10px; }
+.btn-lg{ padding: 12px 18px; border-radius: 14px; }
+
+/* file input “Novo Livro” combina com a base */
+input[type="file"].btn { padding: 8px 12px; }

@@ -6,6 +6,7 @@ import ModalMount from "../components/ModalMount.jsx";
 import s from "./Library.module.css";
 
 
+
 // ==== helpers de reidratação (mesmos do Progress) ====
 const makeKey = (book) => `book-settings:${book?.id || book?.title || "unknown"}`;
 const loadBookSettings = (book) => {
@@ -31,6 +32,18 @@ function clientXof(e) {
   return e?.clientX ?? e?.touches?.[0]?.clientX ?? e?.changedTouches?.[0]?.clientX ?? 0;
 }
 
+// helpers para capa (quebra cache quando coverVer muda)
+const coverSrc = (b) => {
+  if (!b?.cover) return "";
+  if (/^https?:\/\//i.test(b.cover)) {
+    const sep = b.cover.includes("?") ? "&" : "?";
+    return `${b.cover}${sep}v=${b.coverVer || 0}`; // anexa ?v=versão
+  }
+  // dataURL já muda quando trocada
+  return b.cover;
+};
+const imgKey = (b) => `${b.id}:${b.coverVer || 0}:${(b.cover || "").length}`;
+
 export default function Library({ onGoProgress }) {
   const { books, activeId, setActiveId, addBook, updateBook } = useLibrary();
 
@@ -45,9 +58,9 @@ export default function Library({ onGoProgress }) {
       Number.isFinite(saved.pagesRead) ? saved.pagesRead : num(b.pagesRead, 0)
     );
     // mantém compat: algumas UIs usam b.pages como total
+    // (mantemos cover/coverVer como vieram do hook)
     return { ...b, pagesTotal: total, pages: total, pagesRead: read };
   }), [rawBooks]);
-
 
   // -------- estado local --------
   const [showNewBook, setShowNewBook] = useState(false);
@@ -55,13 +68,14 @@ export default function Library({ onGoProgress }) {
 
   // fila real: livros + card “novo” no fim
   const items = useMemo(() => [...booksView, { id: "__NEW__", isNew: true }], [booksView]);
+
   // índice atual baseado no activeId
   const [index, setIndex] = useState(() => {
     const i = items.findIndex((it) => it.id === activeId);
     return i >= 0 ? i : 0;
   });
 
-  // quando activeId mudar (ex.: depois de salvar), sincroniza índice
+  // quando activeId OU a lista mudar (ex.: capa trocada), sincroniza índice
   useEffect(() => {
     const i = items.findIndex((it) => it.id === activeId);
     if (i >= 0 && i !== index) setIndex(i);
@@ -106,7 +120,6 @@ export default function Library({ onGoProgress }) {
       if (it && !it.isNew) setActiveId(it.id);
     }
   }
-
 
   // ---------- swipe/drag unificado (pointer) ----------
   const viewportRef = useRef(null);
@@ -201,7 +214,7 @@ export default function Library({ onGoProgress }) {
 
     return (
       <button
-        key={it.id || `i-${i}`}
+        key={(it.isNew ? `i-${i}` : `${it.id}:${it.coverVer || 0}`)}   // ← key muda quando a capa muda
         type="button"
         className={cls}
         onClick={() => handleSlideClick(i)}
@@ -210,7 +223,12 @@ export default function Library({ onGoProgress }) {
         {it.isNew ? (
           <span className={s.plusMark}>+</span>
         ) : it.cover ? (
-          <img className={s.cover} src={it.cover} alt={it.title || ""} />
+          <img
+            key={imgKey(it)}
+            className={s.cover}
+            src={coverSrc(it)}
+            alt={it.title || ""}
+          />
         ) : (
           <div className={s.coverPlaceholder}>📘</div>
         )}
@@ -324,7 +342,6 @@ export default function Library({ onGoProgress }) {
             }
             setShowPages(false);
           }}
-          
         />
       </ModalMount>
     </section>

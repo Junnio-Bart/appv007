@@ -49,8 +49,8 @@
 .header{ padding:14px 16px 10px; border-bottom:1px solid #22314d; }
 .bookTitle{ 
   margin:0 0 10px; 
-  font-size:22px; 
-  font-weight:800; 
+  font-size:26px; 
+  font-weight:780; 
   letter-spacing:-.2px; 
 }
 .headRow{ display:grid; grid-template-columns:auto 1fr; gap:12px; align-items:start; }
@@ -60,7 +60,14 @@
 
 .metaBox{ display:flex; flex-direction:column; gap:6px; }
 .authorLine{ display:flex; align-items:center; gap:8px; }
-.author{ opacity:.95; font-style:italic; }
+.author{ 
+  opacity:.95; 
+  font-size: 16px;
+  font-style: italic;
+  color: #7ca6ff;
+
+
+}
 .smallLink{ background:transparent; border:0; color:#7bb1ff; cursor:pointer; font-size:.9rem; }
 .authorInput{
   background:#0b1326; 
@@ -71,8 +78,70 @@
   font:inherit; 
   width:min(150px, 60vw);
 }
-.metaLine{ opacity:.85; display:flex; align-items:center; gap:8px; }
-.avgNum{ opacity:.78; margin-left:6px; font-size:.95rem; }
+
+/* base da linha */
+.metaLine{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  
+}
+
+/* valores comuns */
+.metaLine .value{ font-weight: 800; letter-spacing: .1px; }
+.metaLine .label{ opacity: .85; }
+.metaLine .sep{ opacity: .7; }
+
+/* ===== PÁGINAS ===== */
+.pagesLine{
+  /* knobs (fáceis de trocar) */
+  --pages-color: #60ffa8;   /* verde claro */
+  --pages-size: 16px;       /* tamanho do número */
+  --pages-total: #cfe7da;   /* cor do total, se quiser diferenciar */
+}
+.pagesLine .value{ 
+  color: var(--pages-color); 
+  font-size: var(--pages-size); 
+}
+.pagesLine .total{ 
+  color: var(--pages-total); 
+  font-weight: 700; 
+}
+.pagesLine .label{ 
+  margin-left: 2px; 
+}
+
+/* opcional: “pill” de fundo para páginas */
+.pagesLine.pill{
+  background: #0b1326;
+  border: 1px solid #22314d;
+  border-radius: 10px;
+  padding: 4px 8px;
+}
+
+/* ===== TEMPO ===== */
+.timeLine{
+  /* knobs */
+  --time-color: #7aa5ff;    /* azul */
+  --time-size: 16px;
+}
+.timeLine .value{ color: var(--time-color); font-size: var(--time-size); }
+.timeLine .label{ margin-left: 2px; }
+
+/* opcional: “pill” de fundo para tempo */
+.timeLine.pill{
+  background: #0b1326;
+  border: 1px solid #22314d;
+  border-radius: 10px;
+  padding: 4px 8px;
+}
+
+
+.avgNum{ 
+  opacity:.78; 
+  margin-left:6px; 
+  font-size: 14px; 
+}
 
 .titleLine{
   display:flex; align-items:center; gap:10px; margin:0 0 10px;
@@ -84,9 +153,21 @@
 }
 
 /* ===== MEIA-ESTRELA ===== */
-.starRow{ display:inline-flex; gap:6px; }
-.starWrap{ position:relative; display:inline-block; width:18px; height:18px; }
-.star{ position:absolute; inset:0; line-height:18px; font-size:18px; }
+.starRow{ 
+  display:inline-flex; 
+  gap:7px; 
+}
+.starWrap{ 
+  position:relative; 
+  display:inline-block; 
+  width:18px; 
+  height:26px; 
+}
+.star{ position:absolute; 
+  inset:0; 
+  line-height:18px; 
+  font-size:25px; 
+}
 .base{ color:rgba(255,255,255,.32); }
 .fill{ color:#FFD76A; overflow:hidden; white-space:nowrap; }
 
@@ -99,9 +180,21 @@
 .list{ flex:1; overflow:auto; padding:12px 16px 24px; }
 .empty{ opacity:.7; }
 .item{ border:1px solid #22314d; border-radius:12px; padding:10px; margin-bottom:10px; background:#0b1326; }
-.itemHead{ display:flex; align-items:center; gap:8px; margin-bottom:6px; font-size:12px; opacity:.9; }
+.itemHead{ 
+  display:flex; 
+  align-items:center; 
+  gap:8px; 
+  margin-bottom:6px; 
+  font-size:14px; 
+  opacity:.9; 
+}
 .badge{ background:#091326; border:1px solid #22314d; border-radius:8px; padding:2px 6px; }
-.starsLine{ margin-left:auto; letter-spacing:1px; font-size: 14px; }
+.starsLine{ 
+  margin-left:auto; 
+  letter-spacing:1px; 
+  font-size: 12px;
+  
+}
 
 
 

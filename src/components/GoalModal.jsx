@@ -42,8 +42,8 @@ export default function GoalModal({ open, initialGoal=0, maxGoal=1, onSave, onCl
         </div>
 
         <div className={s.footer}>
-          <button type="button" className={s.btnGhost} onClick={onClose}>Cancelar</button>
-          <button type="button" className={s.btnPrimary} onClick={()=> onSave?.(cap(value))}>Salvar</button>
+          <button type="button" className="btn btn-ghost" onClick={onClose}>Cancelar</button>
+          <button type="button" className="btn btn-primary" onClick={()=> onSave?.(cap(value))}>Salvar</button>
         </div>
       </div>
     </ModalMount>

@@ -29,7 +29,7 @@ function StarsEditable({ value=0, onChange }) {
   );
 }
 
-export default function NoteDetailModal({ open, entry, onClose, onSaved, onSave }) {
+export default function NoteDetailModal({ open, entry, onClose, onSave }) {
   const [rating, setRating] = useState(entry?.rating || 0);
   const [note, setNote]     = useState(entry?.note || "");
   const caption = CAPTIONS[rating] || "";
@@ -45,7 +45,7 @@ export default function NoteDetailModal({ open, entry, onClose, onSaved, onSave 
   const handleSave = async () => {
     // salva usando a instância do hook do PAI (BookDrawer)
     await onSave?.({ rating, note, id: entry.id });
-    onSaved?.();   // opcional: sinaliza “salvei”
+    onSave?.({ id: entry.id, rating, note });   // opcional: sinaliza “salvei”
     onClose?.();
   };
 
@@ -73,8 +73,8 @@ export default function NoteDetailModal({ open, entry, onClose, onSaved, onSave 
         />
 
         <div className={css.actions}>
-          <button className={css.btnGhost} onClick={onClose}>Cancelar</button>
-          <button className={css.btnPrimary} onClick={handleSave}>Salvar</button>
+          <button className="btn btn-ghost" onClick={onClose}>Cancelar</button>
+          <button className="btn btn-primary" onClick={handleSave}>Salvar</button>
         </div>
       </div>
     </ModalMount>

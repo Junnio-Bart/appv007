@@ -25,6 +25,7 @@ export default function Journal(){
   const books = lib?.books ?? lib?.state?.books ?? [];
   const [openId, setOpenId] = useState(null);
   const openBook = useMemo(() => books.find(b => b.id === openId) || null, [books, openId]);
+  
 
   // metas / contadores
   const { getMonthlyGoal, setMonthlyGoal, getYearlyGoal, setYearlyGoal } = useGoals();

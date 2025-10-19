@@ -61,8 +61,8 @@ export default function CycleSettingsModal({
         </div>
 
         <div className={s.footer}>
-          <button type="button" className={s.btnGhost} onClick={onClose}>Cancelar</button>
-          <button type="button" className={s.btnPrimary} onClick={()=> onSave?.(capPpc(ppc), capInt(interval))}>Salvar</button>
+          <button type="button" className="btn btn-ghost" onClick={onClose}>Cancelar</button>
+          <button type="button" className="btn btn-primary" onClick={()=> onSave?.(capPpc(ppc), capInt(interval))}>Salvar</button>
         </div>
       </div>
     </ModalMount>

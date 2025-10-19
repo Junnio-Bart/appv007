@@ -73,8 +73,8 @@ export default function NewBookModal({ open, onClose, onSave }) {
           </label>
 
           <div className={s.actions}>
-            <button type="button" className={s.btn} onClick={onClose}>Cancelar</button>
-            <button type="submit" className={`${s.btn} ${s.btnPrimary}`}>Salvar</button>
+            <button type="button" className="btn btn-ghost" onClick={onClose}>Cancelar</button>
+            <button type="submit" className="btn btn-primary">Salvar</button>
           </div>
         </form>
       </div>

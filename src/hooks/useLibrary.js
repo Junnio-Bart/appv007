@@ -76,18 +76,18 @@ export default function useLibrary() {
       id,
       title: title?.trim() || "Sem título",
       author: author?.trim() || "",
-      pagesTotal: total,   // usado no Progress
-      pages: total,        // alguns lugares usam "pages" (Journal)
+      pagesTotal: total,
+      pages: total,
       pagesRead: 0,
       status: "lendo",
       cover: cover || null,
+      coverVer: 0,                 // 🔸 começa com 0
       createdAt: Date.now(),
     };
     setBooks(prev => [...prev, book]);
     setActiveId(id);
     return id;
   }
-  
 
   function updateBook(id, patch) {
     setBooks(prev => prev.map(b => {
@@ -100,12 +100,16 @@ export default function useLibrary() {
       const nextReadRaw = (patch.pagesRead != null) ? Number(patch.pagesRead) : curRead;
       const nextRead = Math.max(0, Math.min(nextReadRaw, nextTotal || curTotal));
   
+      // 🔹 se a capa mudou, aumenta coverVer
+      const coverChanged = patch.cover != null && patch.cover !== b.cover;
+  
       return normalizeBook({
         ...b,
         ...patch,
         pagesTotal: nextTotal,
         pages: nextTotal,
         pagesRead: nextRead,
+        coverVer: coverChanged ? ((b.coverVer || 0) + 1) : (b.coverVer || 0),
       });
     }));
   }

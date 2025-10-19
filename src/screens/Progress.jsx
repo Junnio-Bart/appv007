@@ -155,6 +155,12 @@ export default function Progress(){
       }
     }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
+
+    // 🔧 sincroniza o store do useLibrary com o que veio salvo por livro
+  if (lib?.updateBook && activeBook) {
+    lib.updateBook(activeBook.id, { pagesTotal: capTotal, pagesRead: capRead });
+  }
+
   }, [activeBook?.id]);
 
   /* ---------- Dropdown do título ---------- */
@@ -255,20 +261,18 @@ export default function Progress(){
   const commitBookTotal = () => {
     const wantedTotal = Math.max(0, parseIntLike(bookTotalDraft));
     const finalTotal  = Math.max(1, wantedTotal);
+  
     setLocalTotal(finalTotal);
     if (localRead > finalTotal) setLocalRead(finalTotal);
-    lib?.setState?.(s0 => {
-      const books = Array.isArray(s0?.books)
-        ? s0.books.map(b => b.id === activeBook.id
-            ? { ...b, pagesTotal: finalTotal, pages: finalTotal, pagesRead: Math.min(num(b.pagesRead, 0), finalTotal) }
-            : b)
-        : s0?.books;
-      const ab = s0?.activeBook && s0.activeBook.id === activeBook.id
-        ? { ...s0.activeBook, pagesTotal: finalTotal, pages: finalTotal, pagesRead: Math.min(num(s0.activeBook.pagesRead, 0), finalTotal) }
-        : s0?.activeBook;
-      return { ...s0, books, activeBook: ab };
-    });
+  
+    // 🔧 salve de verdade no store central
+    if (lib?.updateBook && activeBook) {
+      lib.updateBook(activeBook.id, { pagesTotal: finalTotal });
+    }
+  
+    // (opcional) também manter em localStorage por livro
     saveBookSettings(activeBook, { pagesTotal: finalTotal });
+  
     setEditing(null);
   };
   const commitBookRead = () => {

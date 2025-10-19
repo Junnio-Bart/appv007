@@ -72,8 +72,8 @@ export default function DayLogModal({
         />
 
         <div className={s.actions}>
-          <button className={s.btnGhost} onClick={onCancel}>Cancelar</button>
-          <button className={s.btnPrimary} onClick={() => onSave?.({ rating, note })}>
+          <button className="btn btn-ghost" onClick={onCancel}>Cancelar</button>
+          <button className="btn btn-primary" onClick={() => onSave?.({ rating, note })}>
             Salvar
           </button>
         </div>

@@ -3,6 +3,19 @@ import { useMemo, useState } from "react";
 import css from "./MonthShelf.module.css";
 import NewBookModal from "../NewBookModal";
 
+// helpers para capa (quebra cache quando coverVer muda)
+const coverSrc = (b) => {
+  if (!b?.cover) return "";
+  if (/^https?:\/\//i.test(b.cover)) {
+    const sep = b.cover.includes("?") ? "&" : "?";
+    return `${b.cover}${sep}v=${b.coverVer || 0}`; // anexa ?v=versão
+  }
+  // dataURL já muda quando trocada
+  return b.cover;
+};
+const imgKey = (b) => `${b.id}:${b.coverVer || 0}:${(b.cover || "").length}`;
+
+// === filtros/formatos existentes ===
 function sameYm(dateISO, y, m){
   if (!dateISO) return false;
   const d = new Date(dateISO);
@@ -15,8 +28,8 @@ function visibleBooksForMonth(books, year, month){
     const total = Math.max(0, Number(b.pages||0));
     const read  = Math.max(0, Number(b.pagesRead||0));
     const finished = Boolean(b.finishedAt) || (total>0 && read>=total);
-    if (finished) return sameYm(b.finishedAt, year, month);     // finalizados no mês/ano do término
-    return (year === now.getFullYear() && month === now.getMonth()); // não finalizados só no mês vigente
+    if (finished) return sameYm(b.finishedAt, year, month); // finalizados no mês/ano do término
+    return (year === now.getFullYear() && month === now.getMonth()); // em andamento só no mês vigente
   });
 }
 function pctRead(book){
@@ -27,7 +40,7 @@ function pctRead(book){
 
 export default function MonthShelf({ year, month, books = [], onBookClick, style }){
   const [openAdd, setOpenAdd] = useState(false);
-  const visible = useMemo(()=>visibleBooksForMonth(books, year, month), [books, year, month]);
+  const visible = useMemo(() => visibleBooksForMonth(books, year, month), [books, year, month]);
 
   return (
     <section className={css.box} style={style}>
@@ -42,15 +55,17 @@ export default function MonthShelf({ year, month, books = [], onBookClick, style
             <button
               type="button"
               className={css.addSlot}
-              onClick={()=>setOpenAdd(true)}
+              onClick={() => setOpenAdd(true)}
               aria-label="Adicionar livro"
-            >+</button>
+            >
+              +
+            </button>
           </div>
         ) : (
           <div className={css.grid}>
             {visible.map((b) => (
               <button
-                key={b.id}
+                key={imgKey(b)}               // 🔸 muda quando a capa muda
                 type="button"
                 className={css.card}
                 onClick={() => onBookClick?.(b)}
@@ -58,12 +73,14 @@ export default function MonthShelf({ year, month, books = [], onBookClick, style
               >
                 <div className={css.cover}>
                   {b.cover
-                    ? <img src={b.cover} alt={b.title || "Capa do livro"} />
+                    ? <img key={imgKey(b)} src={coverSrc(b)} alt={b.title || "Capa do livro"} />
                     : <div className={css.ph}>+</div>}
                 </div>
 
                 <div className={css.meta}>
-                  <div className={css.title} title={b.title}>{b.title || "— sem título —"}</div>
+                  <div className={css.title} title={b.title}>
+                    {b.title || "— sem título —"}
+                  </div>
                   <div className={css.author}>{b.author || "Autor"}</div>
                 </div>
 
@@ -76,7 +93,7 @@ export default function MonthShelf({ year, month, books = [], onBookClick, style
         )}
       </div>
 
-      <NewBookModal open={openAdd} onClose={()=>setOpenAdd(false)} />
+      <NewBookModal open={openAdd} onClose={() => setOpenAdd(false)} />
     </section>
   );
 }

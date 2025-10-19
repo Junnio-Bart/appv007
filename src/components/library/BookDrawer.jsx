@@ -28,6 +28,18 @@ function StarMeter({ value = 0 }) {
   );
 }
 
+// helpers para capa (quebra cache quando coverVer muda)
+const coverSrc = (b) => {
+  if (!b?.cover) return "";
+  if (/^https?:\/\//i.test(b.cover)) {
+    const sep = b.cover.includes("?") ? "&" : "?";
+    return `${b.cover}${sep}v=${b.coverVer || 0}`; // anexa ?v=versão
+  }
+  // dataURL já muda quando trocada
+  return b.cover;
+};
+const imgKey = (b) => `${b.id}:${b.coverVer || 0}:${(b.cover || "").length}`;
+
 export default function BookDrawer({ open, book, onClose }){
   if (!open || !book) return null;
 
@@ -152,9 +164,15 @@ export default function BookDrawer({ open, book, onClose }){
           )}
         </div>
           <div className={s.headRow}>
-            <button className={s.coverBtn} onClick={()=> setCoverOpen(true)} aria-label="Alterar capa">
-              <img className={s.cover} src={liveBook.cover || ""} alt={liveBook.title}/>
-            </button>
+
+           <button className={s.coverBtn} onClick={()=> setCoverOpen(true)} aria-label="Alterar capa">
+            <img
+              key={imgKey(liveBook)}
+              className={s.cover}
+              src={coverSrc(liveBook)}
+              alt={liveBook.title}
+            />
+          </button>
 
             <div className={s.metaBox}>
               {/* Autor em itálico + editável */}
@@ -199,20 +217,27 @@ export default function BookDrawer({ open, book, onClose }){
               </div>
 
               <div className={s.metaLine}>
-              <strong>{liveBook.pagesTotal}</strong> 
-                /
-              <strong>{liveBook.pagesRead}</strong> 
-                páginas
-              </div>
-
-              <div className={s.metaLine}>
-                {fmtMin(totalMinutes)} lidos
-              </div>
-
-              <div className={s.metaLine}>
                 <StarMeter value={avg} />
                 <span className={s.avgNum}>{Number(avg||0).toFixed(1)}</span>
               </div>
+              
+              {/* Páginas */}
+              <div className={`${s.metaLine} ${s.pagesLine}`}>
+                <span className={s.value}>{liveBook.pagesRead}</span>
+                <span className={s.sep}>/</span>
+                <span className={s.total}>{liveBook.pagesTotal}</span>
+                <span className={s.label}>páginas</span>
+              </div>
+
+              
+
+             {/* Tempo lido */}
+              <div className={`${s.metaLine} ${s.timeLine}`}>
+                <span className={s.value}>{fmtMin(totalMinutes)}</span>
+                <span className={s.label}>lidos</span>
+              </div>
+
+              
             </div>
           </div>
         </header>
@@ -250,13 +275,13 @@ export default function BookDrawer({ open, book, onClose }){
 
               <div className={s.row}>
               <button
-                className={s.btnGhost}
+                className="btn btn-ghost btn-sm"
                 onClick={() => setDetail({ ...e, bookId: liveBook.id })}
               >
                 Editar nota
               </button>
                 <button
-                  className={s.btnDanger}
+                  className="btn btn-danger btn-sm"
                   onClick={() => lib.removeEntry(liveBook.id, e.id)}
                 >
                   Excluir
@@ -268,20 +293,19 @@ export default function BookDrawer({ open, book, onClose }){
         </div>
 
         <footer className={s.footer}>
-          <button className={s.btnClose} onClick={onClose}>Fechar</button>
+          <button className="btn btn-ghost" onClick={onClose}>Fechar</button>
         </footer>
       </aside>
 
       {/* Picker de capas */}
       <CoverPicker
         open={coverOpen}
+        bookId={liveBook.id}
         current={liveBook.cover || ""}
         title={liveBook.title}
-        title={liveBook.title}
         onClose={()=> setCoverOpen(false)}
-        onSelect={(url, persist)=> {
-          lib.updateBook?.(liveBook.id, { cover: url });
-          if (persist) CoverPicker.saveToGallery(book.id, url);
+        onPick={(url) => {
+          lib.updateBook(liveBook.id, { cover: url }); // 🔸 dispara coverVer++
           setCoverOpen(false);
         }}
       />

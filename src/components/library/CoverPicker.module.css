@@ -2,19 +2,49 @@
 .backdrop{ position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:12000; }
 .panel{
   position:fixed; left:50%; top:50%; transform:translate(-50%,-50%);
-  z-index: 12001;   
-  width:min(92vw, 720px); max-height:86vh; overflow:auto;
-  background:#0f172a; border:1px solid #22314d; border-radius:16px; padding:16px;
+  width:min(92vw, 820px); max-height:86vh; overflow:auto;
+  background:#0f172a; border:1px solid #22314d; border-radius:16px; padding:16px; z-index:12001;
 }
-.title{ margin:0 0 12px; font-weight:800; }
-.grid{ display:grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap:12px; }
-.card{
-  position:relative; aspect-ratio: 3 / 4; border-radius:12px; overflow:hidden;
-  background:#0b1326; border:1px solid #22314d; color:#fff; cursor:pointer;
-  display:flex; align-items:center; justify-content:center; text-align:center; padding:8px;
+/* título + subtítulo */
+.title{
+  margin: 0 0 4px;
+  font-weight: 800;
+  font-size: 22px;
 }
-.card img{ width:100%; height:100%; object-fit:cover; }
-.active{ outline:2px solid #2b78ff; }
-.add span, .url span{ opacity:.9; }
-.actions{ display:flex; justify-content:flex-end; margin-top:12px; }
-.btn{ background:#13254a; border:1px solid #1a3a72; color:#fff; border-radius:10px; padding:6px 12px; }
+.subtitle{
+  opacity: .9;
+  margin: 0 0 12px;
+  font-size: 14px;
+}
+/* centralizar apenas quando quisermos */
+.rowCenter{
+  justify-content: center;
+}
+.toolbar{ display:flex; gap:10px; margin-bottom:12px; }
+.error{ margin: 6px 0 10px; color:#ffb4b4; background:#2a0e15; border:1px solid #6a1e2b; padding:8px 10px; border-radius:10px; }
+
+.grid{
+  display:grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap:12px;
+}
+.item{
+  background:#0b1326; border:1px solid #22314d; border-radius:12px; padding:8px;
+}
+.item.selected{ outline:2px solid #1761d0; outline-offset:2px; }
+.coverBtn{ display:block; width:100%; background:transparent; border:0; padding:0; cursor:pointer; }
+.cover{
+  display:block; width:100%; aspect-ratio:3/4; object-fit:cover;
+  border-radius:10px; border:1px solid #22314d;
+}
+.row{ display:flex; gap:8px; justify-content:space-between; margin-top:8px; }
+.actions{ display:flex; justify-content:flex-end; gap:10px; margin-top:14px; }
+.empty{ opacity:.8; padding:20px 8px; text-align:center; }
+
+.searchBox{ display:flex; flex-direction:column; gap:10px; margin-bottom:12px; }
+.searchForm{ display:flex; gap:8px; }
+.searchInput{
+  flex:1;
+  background:#0b1326; border:1px solid #22314d; color:#fff;
+  border-radius:10px; padding:8px 10px; font:inherit;
+}
