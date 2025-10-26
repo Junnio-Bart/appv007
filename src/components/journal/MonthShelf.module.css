@@ -79,6 +79,7 @@
   gap: var(--row-gap) var(--col-gap);
 }
 
+
 /* CARTA */
 .card{
   color: #fff; 
@@ -123,4 +124,38 @@
 }
 .bar span{ display:block; height:100%; background: var(--bar-fill); width:0; }
 
-/* >>> removemos o @media que forçava 2 colunas */
+/* Borda azul 100% visível (não é cortada) */
+.addCard {
+  /* outline costuma “vazar” e pode ser cortado; use inset */
+  box-shadow: inset 0 0 0 2px rgba(0, 115, 255, 0.9);
+}
+
+/* Mais destaque no + e centralizadão */
+.plus {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  font-size: 56px;
+  line-height: 1;
+  opacity: .95;
+  color:#4edba5;
+}
+
+/* Título do card de adicionar: sem reticências, pode quebrar linha */
+.addTitle {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  text-align: center;
+  line-height: 1.2;
+  min-height: 2.4em;   /* dá espaço pra “Adicione um livro” caber bem */
+  color:#ffffff;
+}
+
+/* Some com a barra de progresso só nesse card */
+.addCard .bar { display: none; }
+
+/* Se o .card tiver overflow:hidden, garanta que a borda/raio fiquem ok */
+.card { overflow: visible; } /* ou remova overflow:hidden se existir */
+

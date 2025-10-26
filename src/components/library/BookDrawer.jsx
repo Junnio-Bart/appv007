@@ -39,6 +39,32 @@ const coverSrc = (b) => {
 };
 const imgKey = (b) => `${b.id}:${b.coverVer || 0}:${(b.cover || "").length}`;
 
+// --- apaga caches/rascunhos locais relacionados ao livro ---
+function eraseBookLocalCaches(book) {
+  try {
+    // capas salvas
+    localStorage.removeItem(`cover-gallery:${book.id}`);
+  } catch {}
+
+  try {
+    // settings por livro (o seu makeKey usa id OU título)
+    localStorage.removeItem(`book-settings:${book.id}`);
+    if (book.title) localStorage.removeItem(`book-settings:${book.title}`);
+  } catch {}
+
+  try {
+    // rascunhos do dia (progress:draft:YYYY-MM-DD:<bookId>)
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith("progress:draft:") && k.endsWith(`:${book.id}`)) {
+        localStorage.removeItem(k);
+        i--; // ajusta índice pois o storage diminuiu
+      }
+    }
+  } catch {}
+}
+
+
 export default function BookDrawer({ open, book, onClose }){
   // ===== Hooks DEVEM vir antes de qualquer return =====
   const lib = useLibrary();
@@ -139,8 +165,51 @@ export default function BookDrawer({ open, book, onClose }){
     setEditingMin(false);
   }
 
+  const [delOpen, setDelOpen] = useState(false);
+  const [delBusy, setDelBusy] = useState(false);
+  const [delErr, setDelErr] = useState("");
+
+
   // ✅ Só agora podemos retornar condicionalmente
   if (!open || !book) return null;
+
+  // ======= EXCLUIR LIVRO (e tudo relacionado) =======
+  async function handleConfirmDelete() {
+    if (!liveBook?.id) return;
+    setDelBusy(true);
+    setDelErr("");
+
+    try {
+      // 1) apaga notas/entradas se o hook tiver removeEntry
+      try {
+        const all = lib.getEntries?.(liveBook.id) || [];
+        for (const e of all) {
+          await lib.removeEntry?.(liveBook.id, e.id);
+        }
+      } catch {}
+
+      // 2) remove o livro da biblioteca
+      if (lib.removeBook) {
+        await lib.removeBook(liveBook.id);
+      } else if (lib.updateBook) {
+        // fallback — marca como removido
+        await lib.updateBook(liveBook.id, { __deleted: true });
+      }
+
+      // 3) limpa caches locais (capas, settings, rascunhos)
+      eraseBookLocalCaches(liveBook);
+
+      // 4) fecha modal e drawer
+      setDelOpen(false);
+      onClose?.();
+    } catch (err) {
+      console.error(err);
+      setDelErr("Não foi possível excluir. Tente novamente.");
+    } finally {
+      setDelBusy(false);
+    }
+  }
+
 
   return (
     <ModalMount>
@@ -365,8 +434,19 @@ export default function BookDrawer({ open, book, onClose }){
         </div>
 
         <footer className={s.footer}>
-          <button className="btn btn-ghost" onClick={onClose}>Fechar</button>
+          <button
+            className="btn btn-danger"
+            onClick={() => setDelOpen(true)}
+            title="Excluir este livro e todos os dados"
+          >
+            Excluir livro
+          </button>
+
+          <button className="btn btn-ghost" onClick={onClose}>
+            Fechar
+          </button>
         </footer>
+
       </aside>
 
       {/* Picker de capas */}
@@ -391,6 +471,30 @@ export default function BookDrawer({ open, book, onClose }){
           await lib.updateEntry(liveBook.id, id, { rating, note });
         }}
       />
+
+      {/* Modal de confirmação de exclusão */}
+      <ModalMount open={delOpen}>
+        <div className={s.confirmBackdrop} onClick={()=>!delBusy && setDelOpen(false)} />
+        <div className={s.confirmCard} onClick={(e)=>e.stopPropagation()}>
+          <h3 className={s.confirmTitle}>Excluir livro?</h3>
+          <p className={s.confirmText}>
+            Isso vai apagar <strong>todas as notas, progresso, capas salvas e rascunhos do dia</strong> deste livro.
+            Essa ação não pode ser desfeita.
+          </p>
+
+          {delErr && <div className={s.error}>{delErr}</div>}
+
+          <div className={s.rowEnd}>
+            <button className="btn btn-ghost" disabled={delBusy} onClick={()=>setDelOpen(false)}>
+              Cancelar
+            </button>
+            <button className="btn btn-danger" disabled={delBusy} onClick={handleConfirmDelete}>
+              {delBusy ? "Excluindo…" : "Excluir"}
+            </button>
+          </div>
+        </div>
+      </ModalMount>
+
     </ModalMount>
   );
 }

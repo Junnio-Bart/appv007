@@ -276,7 +276,13 @@
 .btnDanger{ background:#7a1a2a; border:1px solid #9c2c3c; color:#fff; border-radius:10px; padding:6px 10px; }
 
 
-.footer{ padding:10px 16px; border-top:1px solid #22314d; display:flex; justify-content:flex-end; background:linear-gradient(to top, rgba(2,8,23,.55), rgba(2,8,23,0)); }
+.footer{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding: 10px 12px;
+  border-top: 1px solid var(--line-weak, rgba(255,255,255,.08));
+}
 .btnClose{ background:#13254a; border:1px solid #1a3a72; color:#fff; border-radius:10px; padding:6px 12px; }
 .date{ opacity:.85; }
 
@@ -372,7 +378,6 @@ button, .btnGhost, .btnPrimary, .btnDanger, .btnClose,
   cursor: pointer;
 }
 
-
 .valueBtn{
   background: transparent;
   border: 0;
@@ -381,4 +386,49 @@ button, .btnGhost, .btnPrimary, .btnDanger, .btnClose,
   align-items: baseline;
   gap: 6px;
   cursor: pointer;
+}
+
+/* modal confirmação */
+.confirmBackdrop{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.55);
+  backdrop-filter: blur(1px);
+}
+.confirmCard{
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  width: min(440px, 92vw);
+  background: var(--surface, #0f1520);
+  border: 1px solid var(--line, rgba(255,255,255,.12));
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: 0 12px 40px rgba(0,0,0,.45);
+  max-height: 80vh;
+  overflow: auto;
+}
+.confirmTitle{
+  font-size: 18px;
+  margin: 0 0 8px;
+}
+.confirmText{
+  margin: 0 0 12px;
+  opacity: .9;
+  line-height: 1.35;
+}
+.rowEnd{
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 6px;
+}
+.error{
+  background: #3b0f0f;
+  color: #ffdcdc;
+  border: 1px solid #6b1c1c;
+  padding: 8px 10px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  font-size: 0.92rem;
 }
