@@ -22,12 +22,9 @@ const lastAllowedMonth = (y) => {
   return n.getMonth();
 };
 
-export default function JournalCalendar({ value, onChange, compact=false }){
+export default function JournalCalendar({ value, onChange, compact = false }) {
   const { year, month } = value;
   const [yearOpen, setYearOpen] = useState(false);
-
-  useEffect(()=>{ if(yearOpen) console.log("Year modal OPEN"); }, [yearOpen]);
-
 
   // centraliza a janela no mês selecionado
   const [winStart, setWinStart] = useState(() => clampStart(month - HALF));
@@ -173,14 +170,14 @@ export default function JournalCalendar({ value, onChange, compact=false }){
       {/* FECHADO */}
       {compact && (
         <div className={css.miniHeader}>
-            <button
-              className={css.yearPill}
-              onMouseDown={(e)=>{ e.preventDefault(); e.stopPropagation(); setYearOpen(true); }}
-              onClick={(e)=> e.stopPropagation()}
-              aria-haspopup="dialog"
-            >
-              {year}
-            </button>
+          <button
+            className={css.yearPill}
+            onMouseDown={(e)=>{ e.preventDefault(); e.stopPropagation(); setYearOpen(true); }}
+            onClick={(e)=> e.stopPropagation()}
+            aria-haspopup="dialog"
+          >
+            {year}
+          </button>
 
           <button
             className={[css.todayBtn, css.miniToday, viewingCurrent ? css.tActive : css.tInactive].join(" ")}
@@ -195,7 +192,7 @@ export default function JournalCalendar({ value, onChange, compact=false }){
         </div>
       )}
 
-      {/* Modal de ano em PORTAL (fora do calendário) */}
+      {/* Modal de ano */}
       {yearOpen && createPortal(
         <YearPickerModal
           open={yearOpen}
@@ -203,7 +200,7 @@ export default function JournalCalendar({ value, onChange, compact=false }){
           onSelect={(y) => { setYearOpen(false); setYearSafe(y); }}
           onClose={() => setYearOpen(false)}
         />,
-        document.getElementById('modal-root') || document.body
+        document.getElementById("modal-root") || document.body
       )}
     </section>
   );

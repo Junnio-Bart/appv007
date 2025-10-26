@@ -96,7 +96,9 @@
   padding:8px 12px; border-radius:12px;
   border:1px solid #334155; background:#111827; color:#e5e7eb;
   transition: transform .18s ease, opacity .18s ease, border-color .18s ease, background .18s ease;
-  min-width:66px; text-transform:lowercase; font-weight:800; letter-spacing:.3px;
+  min-width:66px; text-transform:lowercase; 
+  font-weight:800; 
+  letter-spacing:.3px;
 }
 .isCenter{
   background:#1f2937; border-color:#3b82f6; color:#fff;
@@ -246,6 +248,7 @@
   background:#111827;
   color:#e5e7eb;
   text-transform: lowercase;
+  font-size: 17px;
   font-weight: 800;
   letter-spacing:.3px;
   line-height: 1; /* ajuda a não “puxar” altura extra */
@@ -419,7 +422,7 @@
   --mini-today-size: 17px;
   --mini-today-px: 10px;
   --mini-today-py: 15px;
-  --mini-chip-w: 55px;
+  --mini-chip-w: 50px;
 }
 
 .miniHeader .yearPill{ 
@@ -445,7 +448,7 @@
 }
 .miniHeader .mChip{
   min-width: var(--mini-chip-w);
-  padding: 9px 12px;
+  padding: 9px 15px;
   border-radius: 010px;
 }
 

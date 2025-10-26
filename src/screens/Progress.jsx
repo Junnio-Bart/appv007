@@ -37,6 +37,23 @@ const saveBookSettings = (book, patch) => {
   } catch {}
 };
 
+// ----- RASCUNHO DIÁRIO (por data ISO: YYYY-MM-DD) -----
+const draftKey = (dateISO, bookId) =>
+  `progress:draft:${(dateISO||"").slice(0,10)}:${bookId||"__no_book__"}`;
+
+function loadProgressDraft(dateISO, bookId){
+  try {
+    const raw = localStorage.getItem(draftKey(dateISO, bookId));
+    return raw ? JSON.parse(raw) : null; // { pagesToday: number }
+  } catch { return null; }
+}
+function saveProgressDraft(dateISO, bookId, data){
+  try { localStorage.setItem(draftKey(dateISO, bookId), JSON.stringify(data)); } catch {}
+}
+function clearProgressDraft(dateISO, bookId){
+  try { localStorage.removeItem(draftKey(dateISO, bookId)); } catch {}
+}
+
 /* ===================== Componente ===================== */
 export default function Progress(){
   const nav = useNavigate();
@@ -45,6 +62,7 @@ export default function Progress(){
   // Livros / seleção
   const books = Array.isArray(lib?.books) ? lib.books : [];  
   const activeBook = lib?.activeBook || lib?.current || lib?.selectedBook || null;
+  
   const [noticeOpen, setNoticeOpen] = useState(false);
 
   if (!activeBook) {
@@ -58,6 +76,10 @@ export default function Progress(){
       </section>
     );
   }
+  
+  // Data do rascunho (hoje)
+  const dateISO = useMemo(() => new Date().toISOString().slice(0,10), []);
+
 
   /* ---------- Estado global atual ---------- */
   const st       = lib?.state || {};
@@ -89,12 +111,34 @@ export default function Progress(){
   // Se a meta diminuir, garanta ppc <= meta
   useEffect(() => { setLocalPpc(prev => Math.min(prev, Math.max(0, localGoal || 0))); }, [localGoal]);
 
-  const pagesTodayGlobal = Math.max(0, num(st.progressDraft?.pagesToday, 0));
-  const [todayLocal, setTodayLocal] = useState(pagesTodayGlobal);
-  // sempre que vier algo novo do provider (ou meta mudar), sincroniza o local
+  // carrega o provider como fallback…
+  const pagesTodayProvider = Math.max(0, num(st.progressDraft?.pagesToday, 0));
+  const [todayLocal, setTodayLocal] = useState(pagesTodayProvider);
+
+  // sempre que trocar de livro OU abrir a tela,
+  // tenta restaurar do rascunho diário primeiro
   useEffect(() => {
-    setTodayLocal(Math.max(0, num(lib?.state?.progressDraft?.pagesToday, 0)));
-  }, [lib?.state?.progressDraft?.pagesToday]);
+    if (!activeBook?.id) return;
+    const draft = loadProgressDraft(dateISO, activeBook.id);
+    if (draft && Number.isFinite(draft.pagesToday)) {
+      setTodayLocal(Math.max(0, draft.pagesToday));
+    } else {
+      setTodayLocal(pagesTodayProvider);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeBook?.id, dateISO]);
+
+  // se o provider mudar (ex.: vindo de outra parte do app) e NÃO houver rascunho salvo,
+  // sincroniza com o provider
+  useEffect(() => {
+    if (!activeBook?.id) return;
+    const hasDraft = !!loadProgressDraft(dateISO, activeBook.id);
+    if (!hasDraft) {
+      setTodayLocal(Math.max(0, num(lib?.state?.progressDraft?.pagesToday, 0)));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lib?.state?.progressDraft?.pagesToday, activeBook?.id, dateISO]);
+
 
   // se a meta mudar e o local estiver acima dela, capa
   useEffect(() => {
@@ -311,12 +355,24 @@ export default function Progress(){
         }
       }));
 
-      // persiste por livro
+      // persiste por livro (como já fazia)
       saveBookSettings(activeBook, { pagesToday: capped });
+
+      // >>> NOVO: salva rascunho diário (por data + livro)
+      if (activeBook?.id) saveProgressDraft(dateISO, activeBook.id, { pagesToday: capped });
+
       return capped;
     });
   };
 
+  useEffect(() => {
+    const onBeforeUnload = () => {
+      if (activeBook?.id) saveProgressDraft(dateISO, activeBook.id, { pagesToday: todayLocal });
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [dateISO, todayLocal, activeBook?.id]);
+  
 
   const incOnePage = () => setPagesToday(p => p + 1);
   const decOnePage = () => setPagesToday(p => p - 1);
@@ -376,10 +432,11 @@ const commitDayRead = () => {
   // NÃO atualiza pagesRead ainda — isso será feito no onSave do modal
 };
 
-
   // limpa o progresso do dia (zera today)
-  const clearToday = () => setPagesToday(0);
-
+  const clearToday = () => {
+    setPagesToday(0);
+    if (activeBook?.id) clearProgressDraft(dateISO, activeBook.id); // <- limpa rascunho
+  };
 
   /* ---------- Modais (mantidos) e colapso da barra ---------- */
   const [goalOpen,  setGoalOpen]  = useState(false);
@@ -828,6 +885,13 @@ const commitDayRead = () => {
 
         setLocalRead(readNew);
         setTodayLocal(0);
+
+        // zera local / provider (você já faz)
+        setTodayLocal(0);
+        saveBookSettings(activeBook, { pagesToday: 0 });
+
+        // >>> NOVO: limpa rascunho diário
+        if (activeBook?.id) clearProgressDraft(dateISO, activeBook.id);
 
         if (lib?.updateBook) {
           const patch = { pagesRead: readNew };

@@ -28,92 +28,72 @@ function StarMeter({ value = 0 }) {
   );
 }
 
-// helpers para capa (quebra cache quando coverVer muda)
+// helpers de capa (cache-bust quando coverVer muda)
 const coverSrc = (b) => {
   if (!b?.cover) return "";
   if (/^https?:\/\//i.test(b.cover)) {
     const sep = b.cover.includes("?") ? "&" : "?";
-    return `${b.cover}${sep}v=${b.coverVer || 0}`; // anexa ?v=versão
+    return `${b.cover}${sep}v=${b.coverVer || 0}`;
   }
-  // dataURL já muda quando trocada
-  return b.cover;
+  return b.cover; // dataURL já muda sozinho
 };
 const imgKey = (b) => `${b.id}:${b.coverVer || 0}:${(b.cover || "").length}`;
 
 export default function BookDrawer({ open, book, onClose }){
-  if (!open || !book) return null;
-
-  const [refreshTick, setRefreshTick] = useState(0);
-  const [version, setVersion] = useState(0);
-
+  // ===== Hooks DEVEM vir antes de qualquer return =====
   const lib = useLibrary();
+
+  // livro “vivo” (lê do store quando ele mudar)
   const liveBook = useMemo(() => {
     const arr = Array.isArray(lib?.books) ? lib.books
              : Array.isArray(lib?.state?.books) ? lib.state.books
              : [];
-    return arr.find(b => b.id === book.id) || book;
+    return (book && arr.find(b => b.id === book.id)) || book || {};
   }, [lib?.books, lib?.state?.books, book]);
 
+  // entradas e agregados
   const entries = useMemo(
-    () => lib.getEntries(liveBook.id),
-    [lib.books, liveBook.id] // re-renderiza quando o setBooks mudar
+    () => (liveBook?.id ? (lib.getEntries?.(liveBook.id) || []) : []),
+    [lib, liveBook?.id]
   );
-
-   const avg     = useMemo(() => lib.getAverageRating(liveBook.id), [lib, liveBook.id]);
+  const avg = useMemo(() => (liveBook?.id ? lib.getAverageRating(liveBook.id) : 0), [lib, liveBook?.id]);
   const totalMinutes = useMemo(
     () => entries.reduce((acc, e) => acc + (Number(e.minutes)||0), 0),
     [entries]
   );
 
-
   // ==== TÍTULO editável ====
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft]     = useState(liveBook.title || "");
-
   useEffect(()=> setTitleDraft(liveBook.title || ""), [liveBook.title]);
-
-  // foco ao entrar no modo de edição
   const titleInputRef = useRef(null);
   useEffect(()=> { if (editingTitle) titleInputRef.current?.focus(); }, [editingTitle]);
-
-  // auto-save enquanto digita (400ms)
   useEffect(() => {
     if (!editingTitle) return;
     const v = (titleDraft || "").trim();
     if ((liveBook.title || "") === v) return;
-    const t = setTimeout(() => {
-      lib.updateBook?.(liveBook.id, { title: v });
-    }, 400);
+    const t = setTimeout(() => { lib.updateBook?.(liveBook.id, { title: v }); }, 400);
     return () => clearTimeout(t);
   }, [editingTitle, titleDraft, liveBook.id, liveBook.title, lib]);
 
-
-  // autor editável
+  // ==== AUTOR editável ====
   const [editingAuthor, setEditingAuthor] = useState(false);
-   const [authorDraft, setAuthorDraft] = useState(liveBook.author || "");
-   useEffect(()=> setAuthorDraft(liveBook.author || ""), [liveBook.author]);
-
+  const [authorDraft, setAuthorDraft] = useState(liveBook.author || "");
+  useEffect(()=> setAuthorDraft(liveBook.author || ""), [liveBook.author]);
   const authorInputRef = useRef(null);
   useEffect(()=> { if (editingAuthor) authorInputRef.current?.focus(); }, [editingAuthor]);
-
-  // ⏱️ debounce para auto-save enquanto digita
   useEffect(() => {
-    if (!editingAuthor) return;                 // só debounce quando está editando
+    if (!editingAuthor) return;
     const value = authorDraft.trim();
-    // se não mudou, não salva
-    if ((book.author || "") === value) return;
-
-    const t = setTimeout(() => {
-      lib.updateBook?.(liveBook.id, { author: value });
-    }, 400);                                    // ajuste fino do debounce
-
+    if ((book?.author || "") === value) return;
+    const t = setTimeout(() => { lib.updateBook?.(liveBook.id, { author: value }); }, 400);
     return () => clearTimeout(t);
-  }, [authorDraft, editingAuthor, book.id, book.author, lib]);
+  }, [authorDraft, editingAuthor, book?.author, liveBook.id, lib]);
 
-  // capa – picker
+  // ==== CAPA ====
   const [coverOpen, setCoverOpen] = useState(false);
 
-  // nota expandida / modal de detalhe
+  // ==== NOTAS expand/editar ====
   const [expanded, setExpanded] = useState(()=> new Set());
   const toggleExpand = (id) => {
     setExpanded(prev => {
@@ -122,8 +102,45 @@ export default function BookDrawer({ open, book, onClose }){
       return next;
     });
   };
-  const [detail, setDetail] = useState(null); // entry inteira
+  const [detail, setDetail] = useState(null);
 
+  // ==== Edição inline: Páginas ====
+  const [editingPages, setEditingPages] = useState(false);
+  const [pagesDraft, setPagesDraft] = useState({
+    read: liveBook.pagesRead || 0,
+    total: liveBook.pagesTotal || 0,
+  });
+  useEffect(() => {
+    setPagesDraft({ read: liveBook.pagesRead || 0, total: liveBook.pagesTotal || 0 });
+  }, [liveBook.pagesRead, liveBook.pagesTotal]);
+
+  function commitPages() {
+    const read  = Math.max(0, Math.floor(Number(pagesDraft.read)||0));
+    const total = Math.max(0, Math.floor(Number(pagesDraft.total)||0));
+    lib.updateBook?.(liveBook.id, { pagesRead: Math.min(read, total), pagesTotal: total });
+    setEditingPages(false);
+  }
+
+  // ==== Edição inline: Minutos (ajuste manual) ====
+  const baseMinutes = useMemo(
+    () => entries.reduce((acc, e) => acc + (Number(e.minutes)||0), 0),
+    [entries]
+  );
+  const manualAdj = Number(liveBook.minutesManual || 0);
+  const shownMinutes = baseMinutes + manualAdj;
+
+  const [editingMin, setEditingMin] = useState(false);
+  const [minDraft, setMinDraft] = useState(shownMinutes);
+  useEffect(() => setMinDraft(shownMinutes), [shownMinutes]);
+  function commitMinutes() {
+    const desired = Math.max(0, Math.floor(Number(minDraft)||0));
+    const adj = desired - baseMinutes; // diferencial salvo no livro
+    lib.updateBook?.(liveBook.id, { minutesManual: adj });
+    setEditingMin(false);
+  }
+
+  // ✅ Só agora podemos retornar condicionalmente
+  if (!open || !book) return null;
 
   return (
     <ModalMount>
@@ -131,71 +148,71 @@ export default function BookDrawer({ open, book, onClose }){
       <aside className={s.drawer} onClick={(e)=>e.stopPropagation()}>
         {/* ===== HEADER ===== */}
         <header className={s.header}>
-        <div className={s.titleLine}>
-          {editingTitle ? (
-            <input
-              ref={titleInputRef}
-              className={s.titleInput}
-              value={titleDraft}
-              onChange={(e)=> setTitleDraft(e.target.value)}
-              onBlur={() => { // salva ao sair
-                const v = (titleDraft || "").trim();
-                if ((liveBook.title || "") !== v) lib.updateBook?.(liveBook.id, { title: v });
-                setEditingTitle(false);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
+          <div className={s.titleLine}>
+            {editingTitle ? (
+              <input
+                ref={titleInputRef}
+                className={s.titleInput}
+                value={titleDraft}
+                onChange={(e)=> setTitleDraft(e.target.value)}
+                onBlur={() => {
                   const v = (titleDraft || "").trim();
                   if ((liveBook.title || "") !== v) lib.updateBook?.(liveBook.id, { title: v });
-                  e.currentTarget.blur();
-                }
-                if (e.key === "Escape") {
-                  setTitleDraft(liveBook.title || "");
                   setEditingTitle(false);
-                }
-              }}
-              placeholder="Título do livro"
-            />
-          ) : (
-            <>
-              <h2 className={s.bookTitle}>{liveBook.title}</h2>
-              <button className={s.smallLink} onClick={()=> setEditingTitle(true)}>editar</button>
-            </>
-          )}
-        </div>
-          <div className={s.headRow}>
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    const v = (titleDraft || "").trim();
+                    if ((liveBook.title || "") !== v) lib.updateBook?.(liveBook.id, { title: v });
+                    e.currentTarget.blur();
+                  }
+                  if (e.key === "Escape") {
+                    setTitleDraft(liveBook.title || "");
+                    setEditingTitle(false);
+                  }
+                }}
+                placeholder="Título do livro"
+              />
+            ) : (
+              <>
+                <h2 className={s.bookTitle}>{liveBook.title}</h2>
+                <button className={s.smallLink} onClick={()=> setEditingTitle(true)}>editar</button>
+              </>
+            )}
+          </div>
 
-           <button className={s.coverBtn} onClick={()=> setCoverOpen(true)} aria-label="Alterar capa">
-            <img
-              key={imgKey(liveBook)}
-              className={s.cover}
-              src={coverSrc(liveBook)}
-              alt={liveBook.title}
-            />
-          </button>
+          <div className={s.headRow}>
+            <button className={s.coverBtn} onClick={()=> setCoverOpen(true)} aria-label="Alterar capa">
+              <img
+                key={imgKey(liveBook)}
+                className={s.cover}
+                src={coverSrc(liveBook)}
+                alt={liveBook.title}
+              />
+            </button>
 
             <div className={s.metaBox}>
-              {/* Autor em itálico + editável */}
+              {/* Autor */}
               <div className={s.authorLine}>
                 {editingAuthor ? (
                   <input
                     ref={authorInputRef}
                     className={s.authorInput}
                     value={authorDraft}
-                    onChange={(e)=> setAuthorDraft(e.target.value)}     // ← digitar já agenda save (debounce)
-                    onBlur={() => {                                     // ← salvar ao clicar fora
+                    onChange={(e)=> setAuthorDraft(e.target.value)}
+                    onBlur={() => {
                       const v = authorDraft.trim();
                       if ((liveBook.author || "") !== v) lib.updateBook?.(liveBook.id, { author: v });
                       setEditingAuthor(false);
                     }}
                     onKeyDown={(e)=> {
-                      if (e.key === "Enter") {                          // ← salvar no Enter
+                      if (e.key === "Enter") {
                         e.preventDefault();
                         const v = authorDraft.trim();
                         if ((liveBook.author || "") !== v) lib.updateBook?.(liveBook.id, { author: v });
                         e.currentTarget.blur();
                       }
-                      if (e.key === "Escape") {                         // ← cancelar edição
+                      if (e.key === "Escape") {
                         setAuthorDraft(book.author || "");
                         setEditingAuthor(false);
                       }
@@ -208,7 +225,7 @@ export default function BookDrawer({ open, book, onClose }){
                     onDoubleClick={()=> setEditingAuthor(true)}
                     title="Duplo clique para editar"
                   >
-                    {liveBook.author || "Autor desconhecido"} 
+                    {liveBook.author || "Autor desconhecido"}
                   </em>
                 )}
                 {!editingAuthor && (
@@ -216,28 +233,87 @@ export default function BookDrawer({ open, book, onClose }){
                 )}
               </div>
 
+              {/* Média de estrelas */}
               <div className={s.metaLine}>
                 <StarMeter value={avg} />
                 <span className={s.avgNum}>{Number(avg||0).toFixed(1)}</span>
               </div>
-              
-              {/* Páginas */}
-              <div className={`${s.metaLine} ${s.pagesLine}`}>
-                <span className={s.value}>{liveBook.pagesRead}</span>
-                <span className={s.sep}>/</span>
-                <span className={s.total}>{liveBook.pagesTotal}</span>
-                <span className={s.label}>páginas</span>
+
+              {/* Páginas – clique para editar */}
+              <div className={`${s.metaLine} ${s.pagesLine} ${editingPages ? s.editing : ""}`}>
+                {editingPages ? (
+                  <>
+                    <input
+                      className={s.inlineNumber}
+                      type="number"
+                      min="0"
+                      value={pagesDraft.read}
+                      onChange={(e)=> setPagesDraft(p => ({ ...p, read: e.target.value }))}
+                      onKeyDown={(e)=> { if(e.key==='Enter') commitPages(); if(e.key==='Escape'){ setEditingPages(false); setPagesDraft({ read: liveBook.pagesRead||0, total: liveBook.pagesTotal||0 }); } }}
+                      onBlur={commitPages}
+                    />
+                    <span className={s.sep}>/</span>
+                    <input
+                      className={s.inlineNumber}
+                      type="number"
+                      min="0"
+                      value={pagesDraft.total}
+                      onChange={(e)=> setPagesDraft(p => ({ ...p, total: e.target.value }))}
+                      onKeyDown={(e)=> { if(e.key==='Enter') commitPages(); if(e.key==='Escape'){ setEditingPages(false); setPagesDraft({ read: liveBook.pagesRead||0, total: liveBook.pagesTotal||0 }); } }}
+                      onBlur={commitPages}
+                    />
+                    <span className={s.label}>páginas</span>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      className={s.valueBtn}
+                      onClick={()=> setEditingPages(true)}
+                      title="Editar páginas lidas/total"
+                    >
+                      <span className={s.value}>{liveBook.pagesRead}</span>
+                      <span className={s.sep}>/</span>
+                      <span className={s.total}>{liveBook.pagesTotal}</span>
+                    </button>
+                    <span className={s.label}>páginas</span>
+                  </>
+                )}
               </div>
 
-              
 
-             {/* Tempo lido */}
+              {/* Minutos – clique para editar (ajuste manual) */}
               <div className={`${s.metaLine} ${s.timeLine}`}>
+                {editingMin ? (
+                  <>
+                    <input
+                      className={s.inlineNumber}
+                      type="number"
+                      min="0"
+                      value={minDraft}
+                      onChange={(e)=> setMinDraft(e.target.value)}
+                      onKeyDown={(e)=> {
+                        if(e.key==='Enter') commitMinutes();
+                        if(e.key==='Escape'){ setEditingMin(false); setMinDraft(shownMinutes); }
+                      }}
+                      onBlur={commitMinutes}
+                    />
+                    <span className={s.label}>min lidos</span>
+                  </>
+                ) : (
+                  <>
+                    <button className={s.valueBtn} onClick={()=> setEditingMin(true)} title="Editar minutos lidos">
+                      <span className={s.value}>{shownMinutes}</span>
+                    </button>
+                    <span className={s.label}>min lidos</span>
+                  </>
+                )}
+              </div>
+
+              {/* (se quiser manter o total calculado com texto "64 min lidos") */}
+              {/* <div className={`${s.metaLine} ${s.timeLine}`}>
                 <span className={s.value}>{fmtMin(totalMinutes)}</span>
                 <span className={s.label}>lidos</span>
-              </div>
-
-              
+              </div> */}
             </div>
           </div>
         </header>
@@ -250,44 +326,40 @@ export default function BookDrawer({ open, book, onClose }){
             const isExpanded = expanded.has(e.id);
             return (
               <div key={e.id} className={s.item}>
-              {/* cabeçalho da nota – layout antigo */}
-              <div className={s.itemHead}>
-                <div className={s.dateBlock}>
-                  <div className={s.dateTop}>{fmtDate(e.dateISO)}</div>
+                <div className={s.itemHead}>
+                  <div className={s.dateBlock}>
+                    <div className={s.dateTop}>{fmtDate(e.dateISO)}</div>
+                  </div>
+                  <span className={s.badge}>{e.pages} págs</span>
+                  {!!e.minutes && <span className={s.badge}>{e.minutes} min</span>}
+                  <span className={s.starsLine} style={{ marginLeft: "auto" }}>
+                    {"★".repeat(e.rating)}{"☆".repeat(5 - e.rating)}
+                  </span>
                 </div>
 
-                <span className={s.badge}>{e.pages} págs</span>
-                {!!e.minutes && <span className={s.badge}>{e.minutes} min</span>}
-
-                <span className={s.starsLine} style={{ marginLeft: "auto" }}>
-                  {"★".repeat(e.rating)}{"☆".repeat(5 - e.rating)}
-                </span>
-              </div>
-
-              {/* corpo da nota – só expandir/contrair */}
-              <p
-                className={`${s.text} ${!expanded.has(e.id) ? s.clamp2 : ""}`}
-                onClick={() => toggleExpand(e.id)}
-                title={!expanded.has(e.id) ? "Clique para expandir" : "Clique para recolher"}
-              >
-                {e.note || <i>Sem observações.</i>}
-              </p>
-
-              <div className={s.row}>
-              <button
-                className="btn btn-ghost btn-sm"
-                onClick={() => setDetail({ ...e, bookId: liveBook.id })}
-              >
-                Editar nota
-              </button>
-                <button
-                  className="btn btn-danger btn-sm"
-                  onClick={() => lib.removeEntry(liveBook.id, e.id)}
+                <p
+                  className={`${s.text} ${!isExpanded ? s.clamp2 : ""}`}
+                  onClick={() => toggleExpand(e.id)}
+                  title={!isExpanded ? "Clique para expandir" : "Clique para recolher"}
                 >
-                  Excluir
-                </button>
+                  {e.note || <i>Sem observações.</i>}
+                </p>
+
+                <div className={s.row}>
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => setDetail({ ...e, bookId: liveBook.id })}
+                  >
+                    Editar nota
+                  </button>
+                  <button
+                    className="btn btn-danger btn-sm"
+                    onClick={() => lib.removeEntry(liveBook.id, e.id)}
+                  >
+                    Excluir
+                  </button>
+                </div>
               </div>
-            </div>
             );
           })}
         </div>
@@ -305,7 +377,7 @@ export default function BookDrawer({ open, book, onClose }){
         title={liveBook.title}
         onClose={()=> setCoverOpen(false)}
         onPick={(url) => {
-          lib.updateBook(liveBook.id, { cover: url }); // 🔸 dispara coverVer++
+          lib.updateBook(liveBook.id, { cover: url }); // atualiza + coverVer
           setCoverOpen(false);
         }}
       />
@@ -316,10 +388,7 @@ export default function BookDrawer({ open, book, onClose }){
         entry={detail}
         onClose={() => setDetail(null)}
         onSave={async ({ id, rating, note }) => {
-          // usa a MESMA instância do hook daqui:
           await lib.updateEntry(liveBook.id, id, { rating, note });
-          // nada de ticks: como este `lib` é o mesmo do Drawer,
-          // setBooks() vai re-renderizar o Drawer automaticamente.
         }}
       />
     </ModalMount>

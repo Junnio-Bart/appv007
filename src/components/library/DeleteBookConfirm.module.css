@@ -1,0 +1,10 @@
+/* src/components/library/DeleteBookConfirm.module.css */
+.backdrop{position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:12000;}
+.panel{
+  position:fixed; left:50%; top:50%; transform:translate(-50%,-50%);
+  background:#0f172a; border:1px solid #22314d; border-radius:16px;
+  padding:16px; width:min(92vw,520px); z-index:12001;
+}
+.title{margin:0 0 8px; font-weight:800; font-size:22px;}
+.text{opacity:.9; margin:0 0 14px;}
+.row{display:flex; justify-content:flex-end; gap:10px;}

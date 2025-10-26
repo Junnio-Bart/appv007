@@ -43,6 +43,8 @@
   --note-title-size: 14px;   /* data/hora */
   --note-badges-size: 12px;  /* págs/min */
   --note-stars-size: 16px;   /* estrelas da nota */
+
+  --num-w: 55px;
 }
 
 /* ===== HEADER ===== */
@@ -53,22 +55,43 @@
   font-weight:780; 
   letter-spacing:-.2px; 
 }
-.headRow{ display:grid; grid-template-columns:auto 1fr; gap:12px; align-items:start; }
+.headRow{
+  display:grid;
+  grid-template-columns: auto minmax(0,1fr);
+  gap:12px;
+  align-items:start;
+}
 
 .coverBtn{ padding:0; border:0; background:transparent; cursor:pointer; }
 .cover{ width:var(--cover); height:calc(var(--cover) * 1.33); object-fit:cover; border-radius:12px; border:1px solid #22314d; }
 
-.metaBox{ display:flex; flex-direction:column; gap:6px; }
-.authorLine{ display:flex; align-items:center; gap:8px; }
-.author{ 
-  opacity:.95; 
-  font-size: 16px;
-  font-style: italic;
-  color: #7ca6ff;
-
-
+.metaBox{ 
+  display:flex; 
+  flex-direction:column; 
+  gap:6px; 
+  min-width:0;            /* 👈 importante */
 }
-.smallLink{ background:transparent; border:0; color:#7bb1ff; cursor:pointer; font-size:.9rem; }
+.authorLine{
+  display:flex; 
+  align-items:center; 
+  gap:8px; 
+  flex-wrap:wrap;         /* 👈 permite quebra */
+}
+.author{
+  opacity:.95;
+  font-size:16px;
+  font-style:italic;
+  color:#7ca6ff;
+  word-break:break-word;  /* 👈 nomes grandes quebram */
+}
+.smallLink{
+  background:transparent; 
+  border:0; 
+  color:#7bb1ff; 
+  cursor:pointer; 
+  font-size:.9rem;
+  padding:0;
+}
 .authorInput{
   background:#0b1326; 
   border:1px solid #22314d; 
@@ -98,17 +121,51 @@
   --pages-color: #60ffa8;   /* verde claro */
   --pages-size: 16px;       /* tamanho do número */
   --pages-total: #cfe7da;   /* cor do total, se quiser diferenciar */
+
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:nowrap;         /* padrão: não quebra */
+}
+/* separador sempre visível e com respiro */
+.pagesLine .sep{
+  opacity: .85;
+  margin: 0 6px;
+  color:#fff;
+  font-size: 18px
 }
 .pagesLine .value{ 
   color: var(--pages-color); 
   font-size: var(--pages-size); 
+  font-weight: 800;
+  letter-spacing: .1px;
 }
 .pagesLine .total{ 
   color: var(--pages-total); 
-  font-weight: 700; 
+  font-size: var(--pages-size);
+  font-weight: 700;
 }
-.pagesLine .label{ 
-  margin-left: 2px; 
+/* o rótulo vai para a linha de baixo quando quebrar */
+.pagesLine .label{
+  flex-basis: 100%;           /* ocupa a linha toda ao quebrar */
+  margin-left: 2px;
+  margin-top: 4px;
+  opacity: .85;
+}
+.pagesLine .value,
+.pagesLine .total{
+  font-weight:800;          /* total agora com o mesmo peso/tamanho do lido */
+  font-size: var(--pages-size);
+}
+/* enquanto EDITANDO: permita quebrar e empurre o rótulo para a linha de baixo */
+.pagesLine.editing{
+  flex-wrap: wrap;                       /* pode quebrar */
+}
+.pagesLine.editing .label{
+  flex-basis: 100%;
+  margin-left: 0;
+  margin-top: 4px;
+  margin:0 0 5px;
 }
 
 /* opcional: “pill” de fundo para páginas */
@@ -193,11 +250,7 @@
   margin-left:auto; 
   letter-spacing:1px; 
   font-size: 12px;
-  
 }
-
-
-
 
 /* clamp 2 linhas com “…” */
 .text { 
@@ -248,6 +301,7 @@ button, .btnGhost, .btnPrimary, .btnDanger, .btnClose,
 }
 
 /* knobs locais (pode ajustar à vontade) */
+
 .drawer,
 .list{
   --sb-track: #0b1326;
@@ -279,4 +333,52 @@ button, .btnGhost, .btnPrimary, .btnDanger, .btnClose,
 .drawer::-webkit-scrollbar-thumb:hover,
 .list::-webkit-scrollbar-thumb:hover{
   background: var(--sb-thumb-hover);
+}
+
+.valueBtn{
+  background: transparent;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+/* inputs numéricos menores e sem setinhas */
+.inlineNumber{
+  appearance: textfield;
+  -moz-appearance: textfield;
+  width: var(--num-w);   /* 👈 controla o tamanho */
+  background:#0b1326;
+  border:1px solid #22314d;
+  color:#fff;
+  border-radius:10px;
+  padding:6px 10px;      /* pode reduzir p/ 4px 8px se quiser menor ainda */
+  font:inherit;
+  text-align:center;
+  
+}
+.inlineNumber::-webkit-outer-spin-button,
+.inlineNumber::-webkit-inner-spin-button{
+  -webkit-appearance:none;
+  margin:0;
+}
+
+/* deixa claro que dá pra clicar */
+.pagesLine .value,
+.pagesLine .total,
+.timeLine .value{
+  cursor: pointer;
+}
+
+
+.valueBtn{
+  background: transparent;
+  border: 0;
+  padding: 0;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  cursor: pointer;
 }
