@@ -1,9 +1,9 @@
-// /src/hooks/useLibrary.js
-import { useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, createElement } from "react";
 
 const KEY = "book:library:v2";
 
-function normalizeBook(b){
+/* ===================== utilidades ===================== */
+function normalizeBook(b) {
   const total = Number(b.pagesTotal ?? b.pages ?? 0);
   const read  = Number(b.pagesRead ?? 0);
   const isFull = total > 0 && read >= total;
@@ -28,62 +28,50 @@ function normalizeBook(b){
   return out;
 }
 
-
 function load() {
   try {
     const raw = localStorage.getItem(KEY);
     if (!raw) return { books: [], activeId: null };
     const parsed = JSON.parse(raw);
     return {
-      books: Array.isArray(parsed.books) ? parsed.books : [],
+      books: Array.isArray(parsed.books) ? parsed.books.map(normalizeBook) : [],
       activeId: parsed.activeId ?? null,
     };
   } catch {
     return { books: [], activeId: null };
   }
 }
-function save(state) { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {} }
+function save(state) {
+  try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {}
+}
 
-export default function useLibrary() {
-  const [books, setBooks] = useState(() => load().books);
-  const [activeId, setActiveId] = useState(() => load().activeId);
+/* ===================== contexto ===================== */
+const LibraryCtx = createContext(null);
 
-  // carregar 1x
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(KEY);
-      if (raw) {
-        const { books: b = [], activeId: a = null } = JSON.parse(raw);
-        // saneia livros incoerentes (ex.: finishedAt setado mas não completo)
-        const sane = b.map(normalizeBook);
-        setBooks(sane);
-        setActiveId(a ?? (sane[0]?.id ?? null));
-      }
-    } catch (e) {
-      console.warn("Falha ao ler storage:", e);
-    }
-  }, []);
-  
+export function LibraryProvider({ children }) {
+  const initial = load();
+  const [books, setBooks] = useState(initial.books);
+  const [activeId, setActiveId] = useState(initial.activeId ?? (initial.books[0]?.id ?? null));
 
-  // salvar sempre que mudar
   useEffect(() => { save({ books, activeId }); }, [books, activeId]);
 
-  // helpers
+  /* --------- ações --------- */
   function addBook({ title, author, pagesTotal, cover }) {
     const id = `b_${Date.now()}_${Math.random().toString(36).slice(2,7)}`;
     const total = Number(pagesTotal) || 0;
-    const book = {
+    const book = normalizeBook({
       id,
-      title: title?.trim() || "Sem título",
-      author: author?.trim() || "",
+      title: String(title || "").trim() || "Sem título",
+      author: String(author || "").trim(),
       pagesTotal: total,
       pages: total,
       pagesRead: 0,
       status: "lendo",
       cover: cover || null,
-      coverVer: 0,                 // 🔸 começa com 0
+      coverVer: 0,
       createdAt: Date.now(),
-    };
+      journal: { entries: [] },
+    });
     setBooks(prev => [...prev, book]);
     setActiveId(id);
     return id;
@@ -92,17 +80,16 @@ export default function useLibrary() {
   function updateBook(id, patch) {
     setBooks(prev => prev.map(b => {
       if (b.id !== id) return b;
-  
+
       const curTotal = Number(b.pagesTotal ?? b.pages ?? 0);
       const nextTotal = Number(patch.pagesTotal ?? patch.pages ?? curTotal);
-  
+
       const curRead = Number(b.pagesRead ?? 0);
       const nextReadRaw = (patch.pagesRead != null) ? Number(patch.pagesRead) : curRead;
       const nextRead = Math.max(0, Math.min(nextReadRaw, nextTotal || curTotal));
-  
-      // 🔹 se a capa mudou, aumenta coverVer
+
       const coverChanged = patch.cover != null && patch.cover !== b.cover;
-  
+
       return normalizeBook({
         ...b,
         ...patch,
@@ -113,20 +100,22 @@ export default function useLibrary() {
       });
     }));
   }
-  
 
   function removeBook(id) {
-    setBooks(prev => prev.filter(b => b.id !== id));
-    setActiveId(prev => (prev === id ? (books[0]?.id ?? null) : prev));
+    setBooks(prev => {
+      const next = prev.filter(b => b.id !== id);
+      setActiveId(a => (a === id ? (next[0]?.id ?? null) : a));
+      return next;
+    });
   }
 
   const current = useMemo(
     () => books.find(b => b.id === activeId) || books[0] || null,
     [books, activeId]
   );
-  const activeBook = current; // alias
+  const activeBook = current;
 
-  // ---------- Diário ----------
+  /* --------- diário --------- */
   function addDailyEntry(bookId, { dateISO = new Date().toISOString(), pages = 0, minutes = 0, rating = 0, note = "" }) {
     setBooks(prev => prev.map(b => {
       if (b.id !== bookId) return b;
@@ -138,12 +127,13 @@ export default function useLibrary() {
         rating: Math.max(0, Math.min(5, Math.floor(rating))),
         note: String(note || "").slice(0, 2000),
       };
-      const entries = [...(b.journal?.entries || []), entry].sort((a, c) => a.dateISO.localeCompare(c.dateISO));
+      const entries = [...(b.journal?.entries || []), entry]
+        .sort((a, c) => String(a.dateISO).localeCompare(String(c.dateISO)));
       return { ...b, journal: { entries } };
     }));
   }
 
-  function updateEntry(bookId, entryId, patch){
+  function updateEntry(bookId, entryId, patch) {
     setBooks(prev => prev.map(b => {
       if (b.id !== bookId) return b;
       const entries = (b.journal?.entries || []).map(e => e.id === entryId ? { ...e, ...patch } : e);
@@ -151,7 +141,7 @@ export default function useLibrary() {
     }));
   }
 
-  function removeEntry(bookId, entryId){
+  function removeEntry(bookId, entryId) {
     setBooks(prev => prev.map(b => {
       if (b.id !== bookId) return b;
       const entries = (b.journal?.entries || []).filter(e => e.id !== entryId);
@@ -159,39 +149,43 @@ export default function useLibrary() {
     }));
   }
 
-  function getEntries(bookId){
-       const b = books.find(x => x.id === bookId);
-       const list = b?.journal?.entries || [];
-       // mais recentes primeiro
-       return list.slice().sort((a, b) =>
-         String(b.dateISO || "").localeCompare(String(a.dateISO || ""))
-       );
-     }
+  function getEntries(bookId) {
+    const b = books.find(x => x.id === bookId);
+    const list = b?.journal?.entries || [];
+    return list.slice().sort((a, b) => String(b.dateISO).localeCompare(String(a.dateISO)));
+  }
 
-  function getAverageRating(bookId){
+  function getAverageRating(bookId) {
     const list = getEntries(bookId);
     if (!list.length) return 0;
-    const sum = list.reduce((acc,e)=> acc + (e.rating||0), 0);
+    const sum = list.reduce((acc, e) => acc + (e.rating || 0), 0);
     return Math.round((sum / list.length) * 10) / 10;
   }
 
-
-  return {
+  const value = {
     books,
-    current,
-    activeBook,
+    setBooks,
     activeId,
     setActiveId,
+    activeBook,
+    current,
     addBook,
     updateBook,
     removeBook,
-    setBooks,
-
-    // diário:
-    addDailyEntry, 
-    updateEntry, 
-    removeEntry, 
-    getEntries, 
+    addDailyEntry,
+    updateEntry,
+    removeEntry,
+    getEntries,
     getAverageRating,
   };
+
+  // 👇 usa createElement pra evitar JSX (assim pode continuar .js)
+  return createElement(LibraryCtx.Provider, { value }, children);
+}
+
+/* hook */
+export default function useLibrary() {
+  const ctx = useContext(LibraryCtx);
+  if (!ctx) throw new Error("useLibrary deve ser usado dentro de <LibraryProvider>");
+  return ctx;
 }

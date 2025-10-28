@@ -2,6 +2,7 @@
 import { useMemo, useState } from "react";
 import css from "./MonthShelf.module.css";
 import NewBookModal from "../NewBookModal";
+import useLibrary from "../../hooks/useLibrary"; // ⟵ importa o hook
 
 // helpers p/ cache-bust
 function coverSrc(b){
@@ -38,9 +39,37 @@ function pctRead(book){
   return Math.min(100, Math.round((read/total)*100));
 }
 
-export default function MonthShelf({ year, month, books=[], onBookClick, style }){
+export default function MonthShelf({ 
+  year, month, books=[], 
+  onBookClick, 
+  onAddNew,    // opcional: se vier de cima, usamos; senão, abrimos modal interno
+  style 
+}){
+  const lib = useLibrary();                 // ⟵ hook da biblioteca
   const [openAdd, setOpenAdd] = useState(false);
   const visible = useMemo(()=>visibleBooksForMonth(books, year, month), [books, year, month]);
+
+  // quando salvar no modal: cria o livro de verdade
+  function handleSaveNew({ title, author, pagesTotal, cover }) {
+    const id = lib.addBook({
+      title,
+      author,
+      pagesTotal: Number(pagesTotal) || 0,
+      cover: cover || null,
+    });
+    setOpenAdd(false);
+    // opcional: já abrir o card recém-criado
+    if (onBookClick) {
+      const created = (lib.books || []).find(b => b.id === id);
+      if (created) onBookClick(created);
+    }
+  }
+
+  // decide como abrir: usa callback externo se existir
+  const openAdder = () => {
+    if (typeof onAddNew === "function") onAddNew();
+    else setOpenAdd(true);
+  };
 
   return (
     <section className={css.box} style={style}>
@@ -55,17 +84,17 @@ export default function MonthShelf({ year, month, books=[], onBookClick, style }
             <button
               type="button"
               className={css.addSlot}
-              onClick={()=>setOpenAdd(true)}
+              onClick={openAdder}              // ⟵ agora chama o criador
               aria-label="Adicionar livro"
             >+</button>
           </div>
         ) : (
           <div className={css.grid}>
-            {/* === CARD “ADICIONAR UM LIVRO” (agora é o PRIMEIRO) === */}
+            {/* === CARD “ADICIONAR UM LIVRO” (primeiro) === */}
             <button
               type="button"
               className={`${css.card} ${css.addCard}`}
-              onClick={()=>setOpenAdd(true)}
+              onClick={openAdder}              // ⟵ idem
               aria-label="Adicionar um livro"
             >
               <div className={css.cover}>
@@ -75,7 +104,6 @@ export default function MonthShelf({ year, month, books=[], onBookClick, style }
                 <div className={`${css.title} ${css.addTitle}`}>Adicione um livro</div>
                 <div className={css.author}>&nbsp;</div>
               </div>
-              {/* sem barra de progresso */}
             </button>
 
             {visible.map((b) => (
@@ -103,11 +131,17 @@ export default function MonthShelf({ year, month, books=[], onBookClick, style }
               </button>
             ))}
           </div>
-
         )}
       </div>
 
-      <NewBookModal open={openAdd} onClose={()=>setOpenAdd(false)} />
+      {/* Modal interno só quando não veio onAddNew de cima */}
+      {(!onAddNew) && (
+        <NewBookModal
+          open={openAdd}
+          onClose={()=>setOpenAdd(false)}
+          onSave={handleSaveNew}             // ⟵ cria o livro no salvar
+        />
+      )}
     </section>
   );
 }

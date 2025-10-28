@@ -5,6 +5,33 @@ import s from "./BookDrawer.module.css";
 import ModalMount from "../ModalMount.jsx";
 import CoverPicker from "./CoverPicker.jsx";
 import NoteDetailModal from "./NoteDetailModal.jsx";
+import SavedNotice from "../SavedNotice.jsx";
+
+async function removeBookDeep(lib, bookId){
+  // 1) preferível
+  if (typeof lib?.removeBook === "function"){
+    await lib.removeBook(bookId);
+    return;
+  }
+
+  // 2) provider com setBooks?
+  if (typeof lib?.setBooks === "function" && Array.isArray(lib?.books)){
+    lib.setBooks(curr => (Array.isArray(curr) ? curr.filter(b => b.id !== bookId) : []));
+    return;
+  }
+
+  // 3) provider com state + setState?
+  if (typeof lib?.setState === "function" && Array.isArray(lib?.state?.books)){
+    lib.setState(s => ({ ...s, books: (s.books || s.state?.books || []).filter(b => b.id !== bookId) }));
+    return;
+  }
+
+  // 4) fallback radical: updateBook marcando deletado (só pra não quebrar)
+  if (typeof lib?.updateBook === "function"){
+    await lib.updateBook(bookId, { __deleted: true });
+  }
+}
+
 
 function fmtDate(s){ try { return new Date(s).toLocaleDateString(); } catch { return s; } }
 function fmtMin(n){ const m = Math.max(0, Math.floor(Number(n)||0)); return `${m} min`; }
@@ -65,7 +92,7 @@ function eraseBookLocalCaches(book) {
 }
 
 
-export default function BookDrawer({ open, book, onClose }){
+export default function BookDrawer({ open, book, onClose, onDeleted }) {
   // ===== Hooks DEVEM vir antes de qualquer return =====
   const lib = useLibrary();
 
@@ -165,43 +192,40 @@ export default function BookDrawer({ open, book, onClose }){
     setEditingMin(false);
   }
 
-  const [delOpen, setDelOpen] = useState(false);
-  const [delBusy, setDelBusy] = useState(false);
-  const [delErr, setDelErr] = useState("");
-
+  // confirmação de exclusão + toast
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [toastOpen, setToastOpen] = useState(false);
 
   // ✅ Só agora podemos retornar condicionalmente
   if (!open || !book) return null;
 
   // ======= EXCLUIR LIVRO (e tudo relacionado) =======
-  async function handleConfirmDelete() {
+  function handleConfirmDelete() {
     if (!liveBook?.id) return;
     setDelBusy(true);
     setDelErr("");
 
     try {
-      // 1) apaga notas/entradas se o hook tiver removeEntry
+      // 1) apaga entradas (se houver)
       try {
         const all = lib.getEntries?.(liveBook.id) || [];
         for (const e of all) {
-          await lib.removeEntry?.(liveBook.id, e.id);
+          lib.removeEntry?.(liveBook.id, e.id);
         }
       } catch {}
 
-      // 2) remove o livro da biblioteca
-      if (lib.removeBook) {
-        await lib.removeBook(liveBook.id);
-      } else if (lib.updateBook) {
-        // fallback — marca como removido
-        await lib.updateBook(liveBook.id, { __deleted: true });
-      }
+      // 2) remove o livro
+      lib.removeBook?.(liveBook.id);
 
-      // 3) limpa caches locais (capas, settings, rascunhos)
+      // 3) limpa caches locais
       eraseBookLocalCaches(liveBook);
 
-      // 4) fecha modal e drawer
-      setDelOpen(false);
+      // 4) fecha tudo
+      setConfirmOpen(false);
       onClose?.();
+
+      // 5) avisa o pai para mostrar o toast fora do Drawer
+      onDeleted?.(liveBook.title || "Livro");
     } catch (err) {
       console.error(err);
       setDelErr("Não foi possível excluir. Tente novamente.");
@@ -436,7 +460,7 @@ export default function BookDrawer({ open, book, onClose }){
         <footer className={s.footer}>
           <button
             className="btn btn-danger"
-            onClick={() => setDelOpen(true)}
+            onClick={() => setConfirmOpen(true)}   // << AQUI
             title="Excluir este livro e todos os dados"
           >
             Excluir livro
@@ -447,7 +471,82 @@ export default function BookDrawer({ open, book, onClose }){
           </button>
         </footer>
 
+
       </aside>
+
+      {/* ===== CONFIRMAR EXCLUSÃO ===== */}
+      {confirmOpen && (
+        <div
+          className={s.overlay}               // ← novo estilo (abaixo)
+          onClick={() => setConfirmOpen(false)}
+          role="presentation"
+        >
+          <div
+            className={s.dialog}              // ← novo estilo (abaixo)
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delTitle"
+          >
+            <h3 id="delTitle" className={s.dialogTitle}>Excluir livro?</h3>
+            <p className={s.dialogText}>
+              Esta ação vai excluir o livro <strong>{liveBook.title || "sem título"}</strong> e
+              todos os dados relacionados (progresso, notas, capas salvas). Não é possível desfazer.
+            </p>
+
+            <div className={s.dialogActions}>
+              <button className="btn btn-ghost" onClick={() => setConfirmOpen(false)}>
+                Cancelar
+              </button>
+              <button
+                className="btn btn-danger"
+                onClick={async () => {
+                  try {
+                    // apagar entradas desse livro (se existir no hook)
+                    try {
+                      const all = lib.getEntries?.(liveBook.id) || [];
+                      for (const e of all) await lib.removeEntry?.(liveBook.id, e.id);
+                    } catch {}
+
+                     // remover do store (robusto)
+                    await removeBookDeep(lib, liveBook.id);
+
+                    // limpar caches locais
+                    try {
+                      localStorage.removeItem(`book-settings:${liveBook.id}`);
+                      localStorage.removeItem(`cover-gallery:${liveBook.id}`);
+                      for (let i = 0; i < localStorage.length; i++){
+                        const k = localStorage.key(i);
+                        if (k && k.startsWith("progress:draft:") && k.endsWith(`:${liveBook.id}`)){
+                          localStorage.removeItem(k); i--;
+                        }
+                      }
+                    } catch {}
+
+                    // fecha o popup de confirmação
+                    setConfirmOpen(false);
+                    // MOSTRA o toast **antes** de fechar o Drawer
+                    setToastOpen(true);
+                    // fecha o Drawer depois do toast (1.3s)
+                    setTimeout(() => {
+                      setToastOpen(false);
+                      onClose?.();
+                    }, 2300);
+                  
+                  
+                  } catch (err) {
+                    console.error("Erro ao excluir livro:", err);
+                    setConfirmOpen(false);
+                  }
+                }}
+              >
+                Sim, excluir
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
 
       {/* Picker de capas */}
       <CoverPicker
@@ -472,28 +571,13 @@ export default function BookDrawer({ open, book, onClose }){
         }}
       />
 
-      {/* Modal de confirmação de exclusão */}
-      <ModalMount open={delOpen}>
-        <div className={s.confirmBackdrop} onClick={()=>!delBusy && setDelOpen(false)} />
-        <div className={s.confirmCard} onClick={(e)=>e.stopPropagation()}>
-          <h3 className={s.confirmTitle}>Excluir livro?</h3>
-          <p className={s.confirmText}>
-            Isso vai apagar <strong>todas as notas, progresso, capas salvas e rascunhos do dia</strong> deste livro.
-            Essa ação não pode ser desfeita.
-          </p>
-
-          {delErr && <div className={s.error}>{delErr}</div>}
-
-          <div className={s.rowEnd}>
-            <button className="btn btn-ghost" disabled={delBusy} onClick={()=>setDelOpen(false)}>
-              Cancelar
-            </button>
-            <button className="btn btn-danger" disabled={delBusy} onClick={handleConfirmDelete}>
-              {delBusy ? "Excluindo…" : "Excluir"}
-            </button>
-          </div>
-        </div>
-      </ModalMount>
+      <SavedNotice
+        open={toastOpen}
+        title="Livro excluído!"
+        subtitle="Todos os dados foram removidos"
+        duration={1500}
+        onClose={() => setToastOpen(false)}
+      />
 
     </ModalMount>
   );

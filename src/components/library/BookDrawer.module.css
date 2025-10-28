@@ -246,6 +246,7 @@
   opacity:.9; 
 }
 .badge{ background:#091326; border:1px solid #22314d; border-radius:8px; padding:2px 6px; }
+
 .starsLine{ 
   margin-left:auto; 
   letter-spacing:1px; 
@@ -432,3 +433,30 @@ button, .btnGhost, .btnPrimary, .btnDanger, .btnClose,
   margin-bottom: 8px;
   font-size: 0.92rem;
 }
+
+/* Overlay de confirmação (escurece e dá blur no fundo) */
+.overlay{
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(6,10,20,0.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: grid;
+  place-items: center;
+  padding: 16px;
+}
+
+.dialog{
+  width: min(420px, calc(100dvw - 32px));
+  background: #0e1624;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+  padding: 18px 16px 14px;
+  color: #e9edf7;
+}
+
+.dialogTitle{ margin:0 0 8px; font-size:18px; font-weight:700; }
+.dialogText { margin:0 0 16px; opacity:.9; line-height:1.4; }
+.dialogActions{ display:flex; gap:8px; justify-content:flex-end; }

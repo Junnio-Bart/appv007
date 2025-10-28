@@ -1,3 +1,4 @@
+// src/App.jsx
 import { useState } from "react";
 import BottomNav from "./components/BottomNav.jsx";
 import Library from "./screens/Library.jsx";
@@ -5,19 +6,13 @@ import Progress from "./screens/Progress.jsx";
 import Timer from "./screens/Timer.jsx";
 import Journal from "./screens/Journal.jsx";
 import LogoButton from "./components/LogoButton.jsx";
-
-import bookLogo from "./assets/icons/logo.svg";
-
 import DriveConnectButton from "./components/DriveConnectButton.jsx";
 
-import './styles/buttons.css';
-
-// …dentro do header… //
-<DriveConnectButton />
-// …dentro do header… //
+import bookLogo from "./assets/icons/logo.svg";
+import "./styles/buttons.css";
 
 export default function App(){
-  const [tab, setTab] = useState("library"); // mantém minúsculo
+  const [tab, setTab] = useState("library");
 
   function handleLogoClick(){
     setTab(t => (t === "library" ? "progress" : "library"));
@@ -33,7 +28,7 @@ export default function App(){
             src={bookLogo}
             height="64px"
           />
-        
+          {/* <DriveConnectButton /> */}
         </header>
 
         {tab === "library"  && <Library onGoProgress={() => setTab("progress")} />}

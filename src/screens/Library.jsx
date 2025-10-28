@@ -1,13 +1,12 @@
+// src/screens/Library.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
-import useLibrary from "../hooks/useLibrary.js";
+import useLibrary from "../hooks/useLibrary";
 import NewBookModal from "../components/NewBookModal.jsx";
 import EditPagesModal from "../components/EditPagesModal.jsx";
 import ModalMount from "../components/ModalMount.jsx";
 import s from "./Library.module.css";
 
-
-
-// ==== helpers de reidratação (mesmos do Progress) ====
+// ==== persistências leves (alinha com a barra preta) ====
 const makeKey = (book) => `book-settings:${book?.id || book?.title || "unknown"}`;
 const loadBookSettings = (book) => {
   try { const raw = localStorage.getItem(makeKey(book)); return raw ? JSON.parse(raw) : null; }
@@ -22,7 +21,7 @@ const saveBookSettings = (book, patch) => {
 };
 const num = (v, d=0) => (Number.isFinite(Number(v)) ? Number(v) : d);
 
-// helpers fora do componente (não são hooks)
+// helpers soltos
 function cssNum(varName, fallback = 0) {
   const v = getComputedStyle(document.documentElement).getPropertyValue(varName);
   const n = parseFloat(v);
@@ -32,14 +31,13 @@ function clientXof(e) {
   return e?.clientX ?? e?.touches?.[0]?.clientX ?? e?.changedTouches?.[0]?.clientX ?? 0;
 }
 
-// helpers para capa (quebra cache quando coverVer muda)
+// cache-bust da capa
 const coverSrc = (b) => {
   if (!b?.cover) return "";
   if (/^https?:\/\//i.test(b.cover)) {
     const sep = b.cover.includes("?") ? "&" : "?";
-    return `${b.cover}${sep}v=${b.coverVer || 0}`; // anexa ?v=versão
+    return `${b.cover}${sep}v=${b.coverVer || 0}`;
   }
-  // dataURL já muda quando trocada
   return b.cover;
 };
 const imgKey = (b) => `${b.id}:${b.coverVer || 0}:${(b.cover || "").length}`;
@@ -47,174 +45,122 @@ const imgKey = (b) => `${b.id}:${b.coverVer || 0}:${(b.cover || "").length}`;
 export default function Library({ onGoProgress }) {
   const { books, activeId, setActiveId, addBook, updateBook } = useLibrary();
 
-  // mescla valores persistidos (total/lidas) para refletir o que foi editado na barra preta
-  const rawBooks   = Array.isArray(books) ? books : [];
-  const booksView  = useMemo(() => rawBooks.map(b => {
+  // livros “vistos” com total/lidas vindos do localStorage quando existir
+  const rawBooks  = Array.isArray(books) ? books : [];
+  const booksView = useMemo(() => rawBooks.map(b => {
     const saved = loadBookSettings(b) || {};
     const total = Number.isFinite(saved.pagesTotal)
       ? saved.pagesTotal
       : num(b.pagesTotal ?? b.pages, 0);
-    const read  = Math.min(total,
+    const read  = Math.min(
+      total,
       Number.isFinite(saved.pagesRead) ? saved.pagesRead : num(b.pagesRead, 0)
     );
-    // mantém compat: algumas UIs usam b.pages como total
-    // (mantemos cover/coverVer como vieram do hook)
     return { ...b, pagesTotal: total, pages: total, pagesRead: read };
   }), [rawBooks]);
 
-  // -------- estado local --------
+  // estado local
   const [showNewBook, setShowNewBook] = useState(false);
   const [showPages, setShowPages] = useState(false);
 
-  // fila real: livros + card “novo” no fim
+  // fila: livros + card “novo”
   const items = useMemo(() => [...booksView, { id: "__NEW__", isNew: true }], [booksView]);
 
-  // índice atual baseado no activeId
+  // índice atual ancorado no activeId
   const [index, setIndex] = useState(() => {
     const i = items.findIndex((it) => it.id === activeId);
     return i >= 0 ? i : 0;
   });
-
-  // quando activeId OU a lista mudar (ex.: capa trocada), sincroniza índice
   useEffect(() => {
     const i = items.findIndex((it) => it.id === activeId);
     if (i >= 0 && i !== index) setIndex(i);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeId, items]);
 
-  const isEmpty = books.length === 0;
-  const current = items[index];
+  const isEmpty   = books.length === 0;
+  const current   = items[index];
   const prevIndex = index > 0 ? index - 1 : null;
   const nextIndex = index < items.length - 1 ? index + 1 : null;
 
-  // ---------- navegação por setas ----------
-  function goPrev() {
-    if (prevIndex == null) return;
-    setIndex(prevIndex);
-    const it = items[prevIndex];
-    if (it && !it.isNew) setActiveId(it.id);
-  }
-  function goNext() {
-    if (nextIndex == null) return;
-    setIndex(nextIndex);
-    const it = items[nextIndex];
-    if (it && !it.isNew) setActiveId(it.id);
-  }
+  // navegação
+  function goPrev(){ if (prevIndex==null) return; setIndex(prevIndex); const it = items[prevIndex]; if (it && !it.isNew) setActiveId(it.id); }
+  function goNext(){ if (nextIndex==null) return; setIndex(nextIndex); const it = items[nextIndex]; if (it && !it.isNew) setActiveId(it.id); }
 
-  function handleCenterClick() {
+  function handleCenterClick(){
     if (current?.isNew) setShowNewBook(true);
-    else {
-      if (typeof onGoProgress === "function") onGoProgress();
-    }
+    else if (typeof onGoProgress === "function") onGoProgress();
   }
 
-  // clicar em um slide lateral leva ao centro (ou abre se já for o centro)
   const didDragRef = useRef(false);
-  function handleSlideClick(i) {
-    if (didDragRef.current) return; // ignorar tap depois de um drag
-    if (i === index) {
-      handleCenterClick();
-    } else {
+  function handleSlideClick(i){
+    if (didDragRef.current) return;
+    if (i === index) handleCenterClick();
+    else {
       setIndex(i);
       const it = items[i];
       if (it && !it.isNew) setActiveId(it.id);
     }
   }
 
-  // ---------- swipe/drag unificado (pointer) ----------
+  // swipe/drag
   const viewportRef = useRef(null);
   const [dragging, setDragging] = useState(false);
   const [dx, setDx] = useState(0);
-
   const startXRef = useRef(0);
-  const lastXRef = useRef(0);
-  const lastTRef = useRef(0);
+  const lastXRef  = useRef(0);
+  const lastTRef  = useRef(0);
 
-  function onPointerDown(e) {
+  function onPointerDown(e){
     const x = clientXof(e);
-    startXRef.current = x;
-    lastXRef.current = x;
-    lastTRef.current = performance.now();
+    startXRef.current = x; lastXRef.current = x; lastTRef.current = performance.now();
     didDragRef.current = false;
     setDragging(true);
   }
-
-  function onPointerMove(e) {
+  function onPointerMove(e){
     if (!dragging) return;
     const x = clientXof(e);
     const now = performance.now();
     const dist = x - startXRef.current;
-
-    // considera como drag se passou do limiar
     if (Math.abs(dist) > 6) didDragRef.current = true;
     e.preventDefault();
-
-    setDx(dist);
-    lastXRef.current = x;
-    lastTRef.current = now;
+    setDx(dist); lastXRef.current = x; lastTRef.current = now;
   }
-
-  function finishGesture() {
-    setDragging(false);
-    setDx(0);
-  }
-
-  function onPointerUp(e) {
+  function finishGesture(){ setDragging(false); setDx(0); }
+  function onPointerUp(e){
     if (!dragging) return;
-
-    const x = clientXof(e);
+    const x  = clientXof(e);
     const dt = Math.max(1, performance.now() - lastTRef.current);
-    const vx = (x - lastXRef.current) / dt; // px/ms
+    const vx = (x - lastXRef.current) / dt;
     const dist = x - startXRef.current;
 
     const cardW   = cssNum("--card-w", 200);
-    const DIST_TH = cardW * 0.28;   // ~28% do card
-    const SPEED_TH = 0.45;          // 0.45 px/ms
-    const TAP_TH   = 8;
+    const DIST_TH = cardW * 0.28;
+    const SPEED_TH= 0.45;
+    const TAP_TH  = 8;
 
-    // TAP (terços laterais navegam, centro deixa o click do botão agir)
-    if (Math.abs(dist) <= TAP_TH && !didDragRef.current) {
+    if (Math.abs(dist) <= TAP_TH && !didDragRef.current){
       const vp = viewportRef.current?.getBoundingClientRect();
-      if (vp) {
+      if (vp){
         const rel = e.clientX - vp.left;
-        if (rel < vp.width * 0.33 && prevIndex != null) {
-          didDragRef.current = true;
-          goPrev();
-        } else if (rel > vp.width * 0.67 && nextIndex != null) {
-          didDragRef.current = true;
-          goNext();
-        }
+        if (rel < vp.width*0.33 && prevIndex!=null){ didDragRef.current = true; goPrev(); }
+        else if (rel > vp.width*0.67 && nextIndex!=null){ didDragRef.current = true; goNext(); }
       }
-      finishGesture();
-      return;
+      finishGesture(); return;
     }
-
-    // SWIPE → distância/velocidade
-    if ((dist < -DIST_TH) || (vx < -SPEED_TH)) {
-      didDragRef.current = true;
-      goNext();
-    } else if ((dist > DIST_TH) || (vx > SPEED_TH)) {
-      didDragRef.current = true;
-      goPrev();
-    }
+    if ((dist < -DIST_TH) || (vx < -SPEED_TH)) { didDragRef.current = true; goNext(); }
+    else if ((dist >  DIST_TH) || (vx >  SPEED_TH)) { didDragRef.current = true; goPrev(); }
     finishGesture();
   }
+  function onPointerCancel(){ finishGesture(); }
+  function onPointerLeave(){ if (dragging) finishGesture(); }
 
-  function onPointerCancel() { finishGesture(); }
-  function onPointerLeave()  { if (dragging) finishGesture(); }
-
-  // ---------- render de 1 slide ----------
+  // render de 1 slide
   const renderSlide = (it, i) => {
     const isCenter = i === index;
-    const cls = [
-      s.slide,
-      it.isNew ? s.plus : s.card,
-      isCenter ? s.isCenter : s.isSide,
-    ].join(" ");
-
+    const cls = [s.slide, it.isNew ? s.plus : s.card, isCenter ? s.isCenter : s.isSide].join(" ");
     return (
       <button
-        key={(it.isNew ? `i-${i}` : `${it.id}:${it.coverVer || 0}`)}   // ← key muda quando a capa muda
+        key={(it.isNew ? `i-${i}` : `${it.id}:${it.coverVer || 0}`)}
         type="button"
         className={cls}
         onClick={() => handleSlideClick(i)}
@@ -223,12 +169,7 @@ export default function Library({ onGoProgress }) {
         {it.isNew ? (
           <span className={s.plusMark}>+</span>
         ) : it.cover ? (
-          <img
-            key={imgKey(it)}
-            className={s.cover}
-            src={coverSrc(it)}
-            alt={it.title || ""}
-          />
+          <img key={imgKey(it)} className={s.cover} src={coverSrc(it)} alt={it.title || ""} />
         ) : (
           <div className={s.coverPlaceholder}>📘</div>
         )}
@@ -236,12 +177,11 @@ export default function Library({ onGoProgress }) {
     );
   };
 
-  // ---------- chip de progresso ----------
-  const read = Number(current?.pagesRead || 0);
+  // chip
+  const read  = Number(current?.pagesRead || 0);
   const total = Number(current?.pagesTotal || 0);
-  const pct = total > 0 ? Math.round((read / total) * 100) : 0;
-  const bandClass =
-    pct < 40 ? s.pRed : pct < 65 ? s.pYellow : pct < 85 ? s.pGreen : s.pBlue;
+  const pct   = total > 0 ? Math.round((read / total) * 100) : 0;
+  const bandClass = pct < 40 ? s.pRed : pct < 65 ? s.pYellow : pct < 85 ? s.pGreen : s.pBlue;
 
   return (
     <section
@@ -256,7 +196,7 @@ export default function Library({ onGoProgress }) {
       }}
     >
       <div className={s.libBox}>
-        {/* viewport + trilha */}
+        {/* viewport */}
         <div
           ref={viewportRef}
           className={[s.viewport, dragging ? s.dragging : ""].join(" ")}
@@ -269,29 +209,12 @@ export default function Library({ onGoProgress }) {
           onTouchMove={onPointerMove}
           onTouchEnd={onPointerUp}
         >
-          <div
-            className={s.track}
-            style={{ "--index": index, "--dx": `${dx}px` }}
-          >
+          <div className={s.track} style={{ "--index": index, "--dx": `${dx}px` }}>
             {items.map((it, i) => renderSlide(it, i))}
           </div>
 
-          <button
-            className={`${s.nav} ${s.left}`}
-            onClick={goPrev}
-            disabled={prevIndex == null}
-            aria-label="Anterior"
-          >
-            ‹
-          </button>
-          <button
-            className={`${s.nav} ${s.right}`}
-            onClick={goNext}
-            disabled={nextIndex == null}
-            aria-label="Próximo"
-          >
-            ›
-          </button>
+          <button className={`${s.nav} ${s.left}`}  onClick={goPrev} disabled={prevIndex==null} aria-label="Anterior">‹</button>
+          <button className={`${s.nav} ${s.right}`} onClick={goNext} disabled={nextIndex==null} aria-label="Próximo">›</button>
         </div>
 
         {/* título / autor / chip */}
@@ -317,14 +240,24 @@ export default function Library({ onGoProgress }) {
         )}
       </div>
 
-      {/* Modais */}
+      {/* === Modais === */}
       <ModalMount open={showNewBook}>
         <NewBookModal
           open={showNewBook}
           onClose={() => setShowNewBook(false)}
           onSave={(data) => {
-            addBook(data);
+            // ⟵ CRIA E JÁ FOCA NO LIVRO NOVO
+            const id = addBook({
+              title: data?.title,
+              author: data?.author,
+              pagesTotal: Number(data?.pagesTotal) || 0,
+              cover: data?.cover || null,
+            });
             setShowNewBook(false);
+            // garante foco visual no novo item
+            setActiveId(id);
+            // índice visual: novo livro é o penúltimo item (antes do card “+”)
+            setIndex(Math.max(0, booksView.length)); 
           }}
         />
       </ModalMount>
@@ -337,7 +270,6 @@ export default function Library({ onGoProgress }) {
           onSave={({ pagesRead, pagesTotal }) => {
             if (updateBook && current && !current.isNew) {
               updateBook(current.id, { pagesRead, pagesTotal });
-              // persiste para manter alinhado com a barra preta
               saveBookSettings(current, { pagesRead, pagesTotal });
             }
             setShowPages(false);
