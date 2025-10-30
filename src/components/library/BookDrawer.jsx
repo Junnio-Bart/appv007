@@ -340,8 +340,8 @@ export default function BookDrawer({ open, book, onClose, onDeleted }) {
                       className={s.inlineNumber}
                       type="number"
                       min="0"
-                      value={pagesDraft.read}
-                      onChange={(e)=> setPagesDraft(p => ({ ...p, read: e.target.value }))}
+                      value={pagesDraft.total}
+                      onChange={(e)=> setPagesDraft(p => ({ ...p, total: e.target.value }))}
                       onKeyDown={(e)=> { if(e.key==='Enter') commitPages(); if(e.key==='Escape'){ setEditingPages(false); setPagesDraft({ read: liveBook.pagesRead||0, total: liveBook.pagesTotal||0 }); } }}
                       onBlur={commitPages}
                     />
@@ -350,11 +350,11 @@ export default function BookDrawer({ open, book, onClose, onDeleted }) {
                       className={s.inlineNumber}
                       type="number"
                       min="0"
-                      value={pagesDraft.total}
-                      onChange={(e)=> setPagesDraft(p => ({ ...p, total: e.target.value }))}
+                      value={pagesDraft.read}
+                      onChange={(e)=> setPagesDraft(p => ({ ...p, read: e.target.value }))}
                       onKeyDown={(e)=> { if(e.key==='Enter') commitPages(); if(e.key==='Escape'){ setEditingPages(false); setPagesDraft({ read: liveBook.pagesRead||0, total: liveBook.pagesTotal||0 }); } }}
                       onBlur={commitPages}
-                    />
+                    />                   
                     <span className={s.label}>páginas</span>
                   </>
                 ) : (
@@ -363,10 +363,10 @@ export default function BookDrawer({ open, book, onClose, onDeleted }) {
                       className={s.valueBtn}
                       onClick={()=> setEditingPages(true)}
                       title="Editar páginas lidas/total"
-                    >
-                      <span className={s.value}>{liveBook.pagesRead}</span>
-                      <span className={s.sep}>/</span>
+                    >                                            
                       <span className={s.total}>{liveBook.pagesTotal}</span>
+                      <span className={s.sep}>/</span>
+                      <span className={s.value}>{liveBook.pagesRead}</span>
                     </button>
                     <span className={s.label}>páginas</span>
                   </>
